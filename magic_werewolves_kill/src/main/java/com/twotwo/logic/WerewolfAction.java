@@ -2,6 +2,9 @@ package com.twotwo.logic;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import javax.swing.SwingUtilities;
+
 import com.twotwo.logic.*;
 import com.twotwo.model.*;
 import com.twotwo.ui.*;
@@ -10,7 +13,7 @@ import com.twotwo.util.*;
 public class WerewolfAction {
     private Game game;
     private int Finished = 0;
-    private int AliveWerewolfNumber = 0;
+    private int AliveWerewolfNumber = 2; // 初始有两个狼人
 
     public WerewolfAction(Game game) {
         this.game = game;
@@ -142,7 +145,9 @@ public class WerewolfAction {
     private void advanceToNextStep() {
         if (Finished >= AliveWerewolfNumber) {
             game.setCurrentStep(game.getCurrentStep() + 1);
+            game.updateCurrentProcess();
             game.processNextStep();
+            Finished = 0; // 为下一次行动做准备
         }
     }
 
@@ -154,46 +159,65 @@ public class WerewolfAction {
         List<Player> Alivewerewolves = getAliveWolves();
         for (PlayerFrame playerFrame : playerFrames) {
             if (Alivewerewolves.contains(playerFrame.getPlayer())) {
-                // 狼人玩家：显示倒计时
-                try {
-                    // 判断是否还存在队友
-                    if (AliveWerewolfNumber <= 1) {
-                        playerFrame.updateInfo("狼人队友已死亡，正在跳过此环节...");
-                    } else {
-                        // 寻找狼人队友界面
-                        for (PlayerFrame SecondFrame : playerFrames) {
-                            if (Alivewerewolves.contains(SecondFrame.getPlayer())
-                                    && SecondFrame != playerFrame) {
-                                playerFrame.showInputArea();
-                            }
-                            break;
-                        }
-                    }
-                    CountdownUtil.startCountdown(
-                            playerFrame,
-                            playerFrame.getScrollPane(),
-                            60,
-                            () -> {
-                                game.setCurrentStep(game.getCurrentStep() + 1);
+                Player anotherWolf = Alivewerewolves.stream()
+                        .filter(wolf -> wolf.isAlive() && wolf != playerFrame.getPlayer())
+                        .findFirst()
+                        .orElse(null);
+                // 判断是否还存在队友
+                if (anotherWolf == null) {
+                    playerFrame.updateInfo("狼人队友已死亡，正在跳过此环节...");
+                } else {
+                    // 确保在Swing线程中显示输入区域
+                    SwingUtilities.invokeLater(() -> {
+                        playerFrame.showInputArea(); // 显示输入框
+                    });
+                    playerFrame.updateInfo("狼人私聊时间，倒计时60秒...请输入私聊内容：");
+                }
+                // 倒计时应在输入区域显示后启动
+                playerFrame.getCountdownUtil().startCountdown(
+                        playerFrame.getScrollPane(),
+                        60,
+                        () -> {
+                            if (game.getCurrentStep() == 8) {
+                                game.setCurrentStep(9);
                                 game.updateCurrentProcess();
                                 game.processNextStep();
-                            });
-                    playerFrame.updateInfo("狼人私聊时间，倒计时60秒...");
+                                playerFrame.hideInputArea();
+                                getPlayerFrame(anotherWolf).hideInputArea();
+                            }
 
-                } catch (IllegalArgumentException e) {
-                    // 捕获布局不符合要求的异常，避免程序崩溃
-                    playerFrame.updateInfo("倒计时初始化失败：" + e.getMessage());
-                }
+                        });
             } else {
                 // 非狼人玩家：显示等待提示
                 playerFrame.updateInfo("等待狼人私聊结束...");
             }
         }
     }
-    
-    public void handleChatInput(List<PlayerFrame> playerFrames, String input) {
-        for (PlayerFrame playerFrame : playerFrames) {
-            playerFrame.updateInfo("[狼人私聊内容] ：" + input);
+
+    public void handleChatInput(PlayerFrame senderFrame, String input) {
+        // 验证发送者是否为存活狼人
+        List<Player> aliveWerewolves = getAliveWolves();
+        if (!aliveWerewolves.contains(senderFrame.getPlayer())) {
+            senderFrame.updateInfo("你不是狼人，无法发送私聊！");
+            return;
+        }
+
+        boolean sented = false; 
+        // 遍历所有玩家窗口，仅向存活狼人队友发送消息
+        for (PlayerFrame receiverFrame : game.getPlayerFrames()) {
+            // 排除发送者自身，且接收者必须是存活狼人
+            if (receiverFrame != senderFrame && aliveWerewolves.contains(receiverFrame.getPlayer())) {
+                ChatUtil.privateChat(senderFrame, receiverFrame, input);
+                sented = true;
+            }
+            if (sented) {
+                if (senderFrame.getCountdownUtil().isCountingDown()) {
+                    senderFrame.getCountdownUtil().finishCountdown();
+                }
+                Finished++;
+                advanceToNextStep();
+                break;
+            }
         }
     }
 

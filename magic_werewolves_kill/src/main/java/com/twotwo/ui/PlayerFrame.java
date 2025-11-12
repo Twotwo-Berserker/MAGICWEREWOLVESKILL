@@ -13,11 +13,12 @@ public class PlayerFrame extends JFrame {
     private Player player;
     private Game game;
     private JTextArea infoArea; // 显示信息
+    private JScrollPane scrollPane; // 滚动面板
     private JTextField inputField; // 输入数字的文本框
     private JPanel inputPanel; // 输入区域面板
     private JButton confirmBtn; // 确认按钮
     private boolean isInputReady = false; // 标记输入是否完成
-    private JScrollPane scrollPane;
+    private CountdownUtil countdownUtil = new CountdownUtil(); // 倒计时工具,每个界面一个实例
     // 其他UI组件...
 
     public PlayerFrame(Player player, Game game) {
@@ -44,7 +45,7 @@ public class PlayerFrame extends JFrame {
 
         // 输入区域（底部）：文本框 + 确认按钮
         inputPanel = new JPanel(new FlowLayout());
-        inputField = new JTextField(5); // 只能输入数字，长度5
+        inputField = new JTextField(10); 
         confirmBtn = new JButton("确认");
         EnterKeyUtil.pressEnterKey(this, confirmBtn);
         // 确认按钮点击事件：提交输入
@@ -86,8 +87,17 @@ public class PlayerFrame extends JFrame {
     public void showInputArea() {
         SwingUtilities.invokeLater(() -> {
             inputPanel.setVisible(true);
-            inputField.requestFocus(); // 聚焦到输入框
+            inputField.setText(""); // 清空输入框
+            inputField.requestFocusInWindow(); // 聚焦到输入框
             isInputReady = false;
+        });
+    }
+
+    // 关闭输入区域
+    public void hideInputArea() {
+        SwingUtilities.invokeLater(() -> {
+            inputPanel.setVisible(false);
+            isInputReady = true;
         });
     }
 
@@ -100,6 +110,7 @@ public class PlayerFrame extends JFrame {
     public Player getPlayer() {
         return player;
     }
+
     public Game getGame() {
         return game;
     }
@@ -108,15 +119,23 @@ public class PlayerFrame extends JFrame {
         return isInputReady;
     }
 
-    public JPanel getInputPanel() {
-        return inputPanel;
-    }
-    
     public JTextArea getInfoArea() {
         return infoArea;
     }
 
     public JScrollPane getScrollPane() {
         return scrollPane;
+    }
+
+    public JTextField getInputField() {
+        return inputField;
+    }
+
+    public JPanel getInputPanel() {
+        return inputPanel;
+    }
+
+    public CountdownUtil getCountdownUtil() {
+        return countdownUtil;
     }
 }

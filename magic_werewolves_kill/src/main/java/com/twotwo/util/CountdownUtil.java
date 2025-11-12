@@ -1,18 +1,20 @@
 package com.twotwo.util;
 
 import javax.swing.*;
-
-import com.twotwo.ui.PlayerFrame;
-
 import java.awt.*;
-import java.util.Timer;
-import java.util.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * 倒计时工具类，用于在界面文本区域下方显示倒计时
  * 倒计时结束后会触发指定的回调方法
  */
 public class CountdownUtil {
+
+    // 静态变量用于跟踪当前倒计时状态
+    private Timer timer = null;
+    private JLabel countdownLabel = null;
+    private Container container = null;
 
     /**
      * 在指定文本区域下方显示倒计时
@@ -21,75 +23,106 @@ public class CountdownUtil {
      * @param seconds  倒计时秒数（10-30秒）
      * @param callback 倒计时结束后的回调方法
      */
-    public static void startCountdown(PlayerFrame pf, JScrollPane scrollPane, int seconds, Runnable callback) {
-        // 验证文本区域是否在滚动面板中（保持原验证逻辑）
-        JTextArea textArea = (JTextArea) scrollPane.getViewport().getView();
-        if (!(textArea instanceof JTextArea) || !(scrollPane.getParent() instanceof Container)) {
-            throw new IllegalArgumentException("文本区域必须放在JScrollPane中,且JScrollPane必须在容器中");
+    public void startCountdown(JScrollPane scrollPane, int seconds, Runnable callback) {
+        // 先停止当前可能存在的倒计时
+        if (isCountingDown()) {
+            finishCountdown();
         }
 
-        // 保存原始文本内容（用于倒计时结束后恢复）
-        Timer timer = new Timer();
-        int[] remainingSeconds = { seconds }; // 用数组存储以在lambda中修改
+        // 校验秒数范围
+        if (seconds < 10 || seconds > 300) {
+            throw new IllegalArgumentException("倒计时秒数必须在10-300秒之间");
+        }
 
-        timer.scheduleAtFixedRate(new TimerTask() {
+        // 获取文本区域
+        JTextArea textArea = (JTextArea) scrollPane.getViewport().getView();
+        if (!(textArea instanceof JTextArea)) {
+            throw new IllegalArgumentException("滚动面板中必须包含文本区域");
+        }
+
+        // 获取父容器
+        Container grandParent = scrollPane.getParent();
+        if (!(grandParent instanceof Container)) {
+            throw new IllegalArgumentException("滚动面板必须有父容器");
+        }
+
+        this.container = (Container) grandParent;
+        LayoutManager layout = container.getLayout();
+        if (!(layout instanceof BorderLayout)) {
+            throw new IllegalArgumentException("父容器必须使用BorderLayout布局");
+        }
+
+        // 创建倒计时标签
+        this.countdownLabel = new JLabel("倒计时: " + seconds + "秒", SwingConstants.CENTER);
+        this.countdownLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        this.countdownLabel.setForeground(Color.RED);
+
+        // 添加到容器顶部
+        this.container.add(this.countdownLabel, BorderLayout.NORTH);
+        this.container.revalidate(); // 刷新布局
+        this.container.repaint(); // 重绘容器
+
+        // 创建定时器
+        timer = new Timer(1000, new ActionListener() {
+            private int remainingSeconds = seconds;
+
             @Override
-            public void run() {
-                SwingUtilities.invokeLater(() -> {
-                    if (remainingSeconds[0] > 0) {
-                        // 1. 先移除所有已有的倒计时行
-                        String currentText = removeExistingCountdown(textArea.getText());
-
-                        // 2. 添加新的倒计时行
-                        textArea.setText(currentText + "[倒计时] 剩余时间：" + remainingSeconds[0] + "秒\n");
-                        remainingSeconds[0]--;
-
-                        // 3. 自动滚动到底部
-                        textArea.setCaretPosition(textArea.getDocument().getLength());
-
-                        // 4. 界面刷新
-                        pf.repaint();
-                    } else {
-                        // 倒计时结束：删除最后一行倒计时并执行回调
-                        String currentText = removeExistingCountdown(textArea.getText());
-                        textArea.setText(currentText + "倒计时结束！\n");
-                        textArea.setCaretPosition(textArea.getDocument().getLength());
-
-                        timer.cancel(); // 停止计时器
-                        callback.run(); // 执行结束回调
+            public void actionPerformed(ActionEvent e) {
+                remainingSeconds--;
+                if (remainingSeconds > 0) {
+                    countdownLabel.setText("倒计时: " + remainingSeconds + "秒");
+                } else {
+                    // 倒计时结束
+                    countdownLabel.setText("倒计时结束！");
+                    finishCountdown();
+                    if (callback != null) {
+                        SwingUtilities.invokeLater(callback);
                     }
-                });
+                }
             }
-        }, 0, 1000); // 立即开始，每秒执行一次
+        });
+
+        timer.start();
+    }
+
+    /*
+     * 检查是否有正在进行的倒计时
+     */
+    public boolean isCountingDown() {
+        // 定时器不为null且正在运行时，视为正在倒计时
+        return timer != null && timer.isRunning();
+    }
+
+    /*
+     * 倒计时结束处理
+     */
+    public void finishCountdown() {
+        timer.stop();
+        // 延迟移除标签，让用户看到结束提示
+        SwingUtilities.invokeLater(() -> {
+            removeLabel();
+            resetVariables();
+        });
     }
 
     /**
-     * 移除文本中所有包含倒计时的行
-     * 
-     * @param text 原始文本
-     * @return 清除倒计时后的文本
+     * 移除倒计时标签
      */
-    private static String removeExistingCountdown(String text) {
-        if (text == null || text.isEmpty()) {
-            return "";
-        }
-
-        // 分割所有行（即使没有换行符，也按逻辑分割）
-        String[] lines = text.split("\n");
-        StringBuilder cleaned = new StringBuilder();
-
-        for (String line : lines) {
-            // 过滤掉包含"[倒计时]"的行（无论位置）
-            if (!line.contains("[倒计时]")) {
-                cleaned.append(line).append("\n"); // 保留非倒计时行，补全换行
+    private void removeLabel() {
+        if (container != null && countdownLabel != null) {
+                container.remove(countdownLabel);
+                container.revalidate();
+                container.repaint();
             }
-        }
-
-        // 移除最后多余的换行符（如果有）
-        if (cleaned.length() > 0) {
-            cleaned.setLength(cleaned.length() - 1);
-        }
-
-        return cleaned.toString();
     }
+
+    /**
+     * 重置静态变量（内部辅助方法）
+     */
+    private void resetVariables() {
+        timer = null;
+        countdownLabel = null;
+        container = null;
+    }
+
 }

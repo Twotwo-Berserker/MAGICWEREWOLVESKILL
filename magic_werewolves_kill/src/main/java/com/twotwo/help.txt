@@ -1,0 +1,5 @@
+一.代码上传GitHub
+git add .  # 添加修改的文件
+git commit -m "描述本次修改"  # 提交到本地仓库
+git push  # 推送到远程 GitHub 仓库（会自动使用之前关联的 origin 地址）
+

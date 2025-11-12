@@ -1,6 +1,10 @@
 package com.twotwo.logic;
 
 import java.util.*;
+
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
 import com.twotwo.model.*;
 import com.twotwo.ui.*;
 import com.twotwo.util.*;
@@ -11,8 +15,9 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = -1;
+    private int currentStep = 8; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
+    private int ChatNumber = 0; // 发言人数
 
     // 其他状态管理对象...
     // private int readyCount = 0; // 暂时未使用
@@ -75,8 +80,10 @@ public class Game {
          * processDay();
          */
 
+        // 测试倒计时
+        werewolfAction.werewolfPrivateChat();
         // 目前测试，直接厨娘绑定然后进入第一天
-        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
@@ -126,10 +133,35 @@ public class Game {
                 werewolfAction.werewolfPrivateChat();
                 break;
             case 9: // 步骤10：进聊天室
+                // 延迟2秒
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(2000, e -> {
+                        notifyAllPlayers("进入聊天室...");
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false); // 只执行一次
+                    timer.start();
+                });
                 break;
             case 10: // 步骤11：大小姐选择顺序
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(2000, e -> {
+                        notifyAllPlayers("大小姐选择发言顺序...");
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false);
+                    timer.start();
+                });
                 break;
-            case 11: // 步骤12：按顺序发公开信（语音先不做），再选择一人发私信（暂时写成连在一起）
+            case 11: // 步骤12：按顺序发公开信（语音先不做）
+                for (PlayerFrame pf : playerFrames) {
+                    if (pf.getPlayer().isAlive()) {
+                        pf.updateInfo("请按顺序发表公开发言：");
+                        pf.showInputArea();
+                    }
+                }
                 break;
             case 12: // 步骤13：小原原行动
                 break;
@@ -342,14 +374,35 @@ public class Game {
 
         // 响应输入：狼人私聊
         if (currentStep == 8) {
-            // 目前狼人私聊逻辑在WerewolfAction中处理
-            werewolfAction.handleChatInput(playerFrames,input);
+            werewolfAction.handleChatInput(pf, input);
+            return;
+        }
+
+        // 响应输入：公开发言
+        if (currentStep == 11) {
+            ChatUtil.publicChat(playerFrames, pf, input);
+            
+            ChatNumber++;
+            if (ChatNumber >= AliveNumber()) {
+                ChatNumber = 0;
+                currentStep++;
+                updateCurrentProcess();
+                processNextStep();
+            }
+            return;
         }
 
         // 推进到下一步
         currentStep++;
         updateCurrentProcess();
         processNextStep();
+    }
+
+    // utils
+    public void notifyAllPlayers(String message) {
+        for (PlayerFrame pf : playerFrames) {
+            pf.updateInfo(message);
+        }
     }
 
     // 其他流程方法实现...
@@ -404,10 +457,14 @@ public class Game {
         return day;
     }
 
+    // 更新当前流程状态给所有玩家(测试用)
     public void updateCurrentProcess() {
-        for (PlayerFrame playerFrame : playerFrames) {
-            playerFrame.updateInfo("currentStep: " + String.valueOf(currentStep));
-        }
+        notifyAllPlayers("current process" + Integer.toString(currentStep));
+    }
+    
+    // 获取存活人数
+    public int AliveNumber() {
+        return (int) players.stream().filter(Player::isAlive).count();
     }
 
     // setters

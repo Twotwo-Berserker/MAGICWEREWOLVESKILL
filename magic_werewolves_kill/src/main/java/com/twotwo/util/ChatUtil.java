@@ -18,7 +18,6 @@ public class ChatUtil {
     public static void privateChat(PlayerFrame senderFrame, PlayerFrame receiverFrame, String message) {
         // 确保在Swing事件调度线程中执行UI操作
         SwingUtilities.invokeLater(() -> {
-            senderFrame.showInputArea();
             String senderName = senderFrame.getPlayer().getName();
             String receiverName = receiverFrame.getPlayer().getName();
             
