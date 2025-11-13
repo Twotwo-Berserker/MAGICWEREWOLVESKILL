@@ -1,6 +1,7 @@
 package com.twotwo.logic;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
@@ -15,7 +16,7 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = 8; // 之后改成-1
+    private int currentStep = 9; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
     private int ChatNumber = 0; // 发言人数
 
@@ -80,8 +81,8 @@ public class Game {
          * processDay();
          */
 
-        // 测试倒计时
-        werewolfAction.werewolfPrivateChat();
+        // 测试
+        processNextStep();
         // 目前测试，直接厨娘绑定然后进入第一天
         // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
@@ -155,13 +156,15 @@ public class Game {
                     timer.start();
                 });
                 break;
-            case 11: // 步骤12：按顺序发公开信（语音先不做）
-                for (PlayerFrame pf : playerFrames) {
-                    if (pf.getPlayer().isAlive()) {
-                        pf.updateInfo("请按顺序发表公开发言：");
-                        pf.showInputArea();
-                    }
-                }
+            case 11: // 步骤12：按顺序公开发言（语音先不做）
+                List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
+                aliveFrames.add(playerFrames.stream()
+                        .filter(pf -> pf.getPlayer().getRole() == Role.RoleType.LADY)
+                        .findFirst()
+                        .orElse(null));
+
+                // 启动发言流程
+                startPublicSpeaking(aliveFrames, 0);
                 break;
             case 12: // 步骤13：小原原行动
                 break;
@@ -243,6 +246,12 @@ public class Game {
 
     // 当玩家输入完成后调用（由PlayerFrame的确认按钮触发）
     public void onPlayerInputCompleted(PlayerFrame pf, String input) {
+        // 公开发言阶段，防止取消输入框  之后优化代码
+        if (currentStep == 11) {
+            ChatUtil.publicChat(playerFrames, currentWaitingFrame, input);
+            return;
+        }
+
         // 地点选择阶段处理
         if (isProcessingLocationSelection) {
             locationInputCount++;
@@ -381,7 +390,7 @@ public class Game {
         // 响应输入：公开发言
         if (currentStep == 11) {
             ChatUtil.publicChat(playerFrames, pf, input);
-            
+
             ChatNumber++;
             if (ChatNumber >= AliveNumber()) {
                 ChatNumber = 0;
@@ -398,61 +407,110 @@ public class Game {
         processNextStep();
     }
 
-    // utils
+    /**
+     * 启动公开发言流程
+     * 
+     * @param frames 按发言顺序排列的玩家窗口列表
+     * @param index  当前发言玩家索引
+     */
+    private void startPublicSpeaking(List<PlayerFrame> frames, int index) {
+        if (index >= frames.size()) {
+            // 所有玩家发言结束，进入下一步
+            currentWaitingFrame = playerFrames.stream()
+                    .filter(playerFrame -> playerFrame.getPlayer().getRole() == Role.RoleType.LADY)
+                    .findFirst()
+                    .orElse(null);
+            currentStep++;
+            processNextStep();
+            return;
+        }
+
+        // 隐藏所有玩家的输入区域
+        playerFrames.forEach(pf -> pf.hideInputArea());
+
+        currentWaitingFrame = frames.get(index);
+        String speakerName = currentWaitingFrame.getPlayer().getName();
+
+        // 通知所有玩家当前发言状态
+        notifyAllPlayers(speakerName + "正在发言...");
+
+        // 配置当前发言玩家
+        currentWaitingFrame.updateInfo("轮到你发言（10秒倒计时）：");
+        currentWaitingFrame.showInputArea();
+
+        // 启动10秒倒计时
+        currentWaitingFrame.getCountdownUtil().startCountdown(
+                currentWaitingFrame.getScrollPane(),
+                10,
+                () -> {
+                    // 倒计时结束回调：记录发言内容并进入下一位
+                    String speech = currentWaitingFrame.getInputField().getText().trim();
+                    if (!speech.isEmpty()) {
+                        ChatUtil.publicChat(playerFrames, currentWaitingFrame, speech);
+                    }
+                    currentWaitingFrame.hideInputArea(); // 倒计时结束时才隐藏输入区域
+                    // 延迟0.5秒进入下一位发言，避免界面闪烁
+                    SwingUtilities.invokeLater(() -> {
+                        Timer delayTimer = new Timer(500, e -> startPublicSpeaking(frames, index + 1));
+                        delayTimer.setRepeats(false);
+                        delayTimer.start();
+                    });
+                });
+    }
+
+    /**
+     * 
+     * utils
+     * 
+     */
+    // 广播消息给所有玩家
     public void notifyAllPlayers(String message) {
         for (PlayerFrame pf : playerFrames) {
             pf.updateInfo(message);
         }
     }
 
-    // 其他流程方法实现...
-
-    // 检查游戏是否结束
-    /*
-     * public boolean checkGameOver() {
-     * // 统计存活狼人数量
-     * long aliveWolves = players.stream()
-     * .filter(p -> p.isAlive() && p.getCamp() == Camp.WEREWOLF)
-     * .count();
-     * 
-     * // 统计存活好人数量
-     * long aliveGood = players.stream()
-     * .filter(p -> p.isAlive() && p.getCamp() == Camp.GOOD)
-     * .count();
-     * 
-     * // 狼人全灭，好人赢
-     * if (aliveWolves == 0) {
-     * return true;
-     * }
-     * 
-     * // 好人只剩一个(除小原原外)等狼人赢的情况
-     * // ...
-     * 
-     * return false;
-     * }
-     */
-
     // getters
+    // 获取存活玩家
+    public List<Player> getAlivePlayers() {
+        return players.stream()
+                .filter(Player::isAlive)
+                .collect(Collectors.toList());
+    }
+
+    // 获取存活玩家界面
+    public List<PlayerFrame> getAlivePlayerFrames() {
+        return playerFrames.stream()
+                .filter(pf -> pf.getPlayer().isAlive())
+                .collect(Collectors.toList());
+    }
+
+    // 获取玩家列表
     public List<Player> getPlayers() {
         return players;
     }
 
+    // 获取玩家界面列表
     public List<PlayerFrame> getPlayerFrames() {
         return playerFrames;
     }
 
+    // 获取是否正在处理位置选择
     public boolean getIsProcessingLocationSelection() {
         return isProcessingLocationSelection;
     }
 
+    // 获取当前等待的玩家界面
     public PlayerFrame getCurrentWaitingFrame() {
         return currentWaitingFrame;
     }
 
+    // 获取当前游戏步骤
     public int getCurrentStep() {
         return currentStep;
     }
 
+    // 获取当前天数
     public int getCurrentDay() {
         return day;
     }
@@ -461,7 +519,7 @@ public class Game {
     public void updateCurrentProcess() {
         notifyAllPlayers("current process" + Integer.toString(currentStep));
     }
-    
+
     // 获取存活人数
     public int AliveNumber() {
         return (int) players.stream().filter(Player::isAlive).count();

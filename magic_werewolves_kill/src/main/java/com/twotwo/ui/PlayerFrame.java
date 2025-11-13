@@ -76,7 +76,7 @@ public class PlayerFrame extends JFrame {
             game.onPlayerInputCompleted(this, input);
             // 清空输入框，隐藏输入区域
             inputField.setText("");
-            inputPanel.setVisible(false);
+            // inputPanel.setVisible(false); // 不是所有输入都需要隐藏输入框
             isInputReady = true;
         } else {
             updateInfo("请输入有效数字！");
