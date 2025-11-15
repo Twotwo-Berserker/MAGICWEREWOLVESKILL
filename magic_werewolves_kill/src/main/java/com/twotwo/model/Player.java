@@ -15,8 +15,9 @@ public class Player {
     private boolean inWall; // 侦探是否在墙内
     private Player boundPlayer; // 厨娘绑定的玩家
     private boolean isBound; // 是否被绑定
-    private boolean isGuarded; // 是否被守护
-    private boolean isDeceived; // 是否被欺骗
+    private boolean isGuarded; // 是否被护守护
+    private boolean isDeceived; // 是否被妖精蒙蔽
+    private boolean isDisturbed; // 是否被小原原干扰
     private int skillTimes; // 角色技能使用次数
     private int deathDay;
     // 其他状态变量...
@@ -33,6 +34,7 @@ public class Player {
         this.isBound = false;
         this.isGuarded = false;
         this.isDeceived = false;
+        this.isDisturbed = false;
         this.skillTimes = 0;
         this.deathDay = -1;
     }
@@ -120,6 +122,15 @@ public class Player {
     public void setIsDeceived(boolean isDeceived) {
         this.isDeceived = isDeceived;
     }
+
+    // 被干扰状态
+    public boolean isDisturbed() {
+        return isDisturbed;
+    }
+
+    public void setIsDisturbed(boolean isDisturbed) {
+        this.isDisturbed = isDisturbed;
+    }
     
     // 角色技能使用次数
     public int getSkillTimes() {
@@ -134,21 +145,9 @@ public class Player {
     public int getDeathDay() {
         return deathDay;
     }
+
     public void setDeathDay(int deathDay) {
         this.deathDay = deathDay;
     }
-
-    // 角色技能相关方法
-    // public void useSkill(Player target, Game game) {
-    // // 根据角色类型执行不同技能
-    // switch (role) {
-    // case GUARD:
-    // game.getGuardState().setProtectedPlayer(target);
-    // break;
-    // case WITCH:
-    // // 魔女光波逻辑
-    // break;
-    // // 其他角色技能...
-    // }
-    // }
+    
 }

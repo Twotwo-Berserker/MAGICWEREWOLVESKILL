@@ -16,9 +16,8 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = 9; // 之后改成-1
+    private int currentStep = 12; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
-    private int ChatNumber = 0; // 发言人数
 
     // 其他状态管理对象...
     // private int readyCount = 0; // 暂时未使用
@@ -93,7 +92,7 @@ public class Game {
             pf.updateInfo("===== 第 " + day + " 天  =====");
         }
         // 启动第一步流程（护行动）
-        currentStep = 0;
+        // currentStep = 0; // 目前测试阶段，不用从0开始
         processNextStep();
     }
 
@@ -158,28 +157,58 @@ public class Game {
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
+                // 最后由大小姐总结归票
                 aliveFrames.add(playerFrames.stream()
                         .filter(pf -> pf.getPlayer().getRole() == Role.RoleType.LADY)
                         .findFirst()
                         .orElse(null));
-
                 // 启动发言流程
                 startPublicSpeaking(aliveFrames, 0);
                 break;
             case 12: // 步骤13：小原原行动
+                startRoleAction(Role.RoleType.LITTLEYUAN, "请输入要干扰的玩家编号：");
                 break;
             case 13: // 步骤14：投票
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(2000, e -> {
+                        notifyAllPlayers("投票环节...");
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false);
+                    timer.start();
+                });
                 break;
             case 14: // 步骤15：公布投票结果
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(2000, e -> {
+                        notifyAllPlayers("投票结果公布...");
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false);
+                    timer.start();
+                });
                 break;
             case 15: // 步骤16：发表遗言，若被投出去的是仓鼠，可选择行动
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(2000, e -> {
+                        notifyAllPlayers("发表遗言阶段...");
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false);
+                    timer.start();
+                });
                 break;
             default:
                 // 当天流程结束
                 for (PlayerFrame pf : playerFrames) {
                     pf.updateInfo("===== 第 " + day + " 天 结束 =====");
                 }
+                resetDay();
                 day++;
+                processDay();
                 return;
         }
     }
@@ -246,7 +275,7 @@ public class Game {
 
     // 当玩家输入完成后调用（由PlayerFrame的确认按钮触发）
     public void onPlayerInputCompleted(PlayerFrame pf, String input) {
-        // 公开发言阶段，防止取消输入框  之后优化代码
+        // 公开发言阶段，防止取消输入框 之后优化代码
         if (currentStep == 11) {
             ChatUtil.publicChat(playerFrames, currentWaitingFrame, input);
             return;
@@ -293,7 +322,7 @@ public class Game {
         // 非地点选择阶段的普通输入处理
         // 处理输入（这里简化为直接记录，实际可解析数字执行技能）
         pf.updateInfo("已确认输入：" + input);
-        pf.getInputPanel().setVisible(false); // 隐藏输入区域
+        pf.hideInputArea(); // 隐藏输入区域
 
         // 响应输入：处理厨娘绑定逻辑
         if (currentStep == -1) {
@@ -387,18 +416,23 @@ public class Game {
             return;
         }
 
-        // 响应输入：公开发言
-        if (currentStep == 11) {
-            ChatUtil.publicChat(playerFrames, pf, input);
-
-            ChatNumber++;
-            if (ChatNumber >= AliveNumber()) {
-                ChatNumber = 0;
-                currentStep++;
-                updateCurrentProcess();
-                processNextStep();
+        // 响应输入：小原原行动
+        if (currentStep == 12) {
+            if (pf.getPlayer().getRole() == Role.RoleType.LITTLEYUAN) {
+                try {
+                    int targetIndex = Integer.parseInt(input);
+                    Player disturbTarget = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
+                    if (disturbTarget != null && pf.getPlayer().getSkillTimes() <= 2) {
+                        pf.getPlayer().incrementSkillTimes();
+                        pf.updateInfo("已干扰玩家：" + disturbTarget.getName());
+                        disturbTarget.setIsDisturbed(true);
+                    } else {
+                        pf.updateInfo("输入无效，未干扰任何玩家");
+                    }
+                } catch (Exception e) {
+                    pf.updateInfo("输入格式错误，未干扰任何玩家");
+                }
             }
-            return;
         }
 
         // 推进到下一步
@@ -416,10 +450,6 @@ public class Game {
     private void startPublicSpeaking(List<PlayerFrame> frames, int index) {
         if (index >= frames.size()) {
             // 所有玩家发言结束，进入下一步
-            currentWaitingFrame = playerFrames.stream()
-                    .filter(playerFrame -> playerFrame.getPlayer().getRole() == Role.RoleType.LADY)
-                    .findFirst()
-                    .orElse(null);
             currentStep++;
             processNextStep();
             return;
@@ -458,8 +488,37 @@ public class Game {
                 });
     }
 
+    /*
+     * 一天结束，重置状态
+     */
+    private void resetDay() {
+        Player IsGuardedOne = players.stream()
+                .filter(player -> player.isGuarded())
+                .findFirst()
+                .orElse(null);
+        if (IsGuardedOne != null)
+            IsGuardedOne.setIsGuarded(false);
+
+        Player IsDeceivedOne = players.stream()
+                .filter(player -> player.isDeceived())
+                .findFirst()
+                .orElse(null);
+        if (IsDeceivedOne != null)
+            IsDeceivedOne.setIsDeceived(false);
+
+        Player IsDisturbedOne = players.stream()
+                .filter(player -> player.isDisturbed())
+                .findFirst()
+                .orElse(null);
+        if (IsDisturbedOne != null)
+            IsDisturbedOne.setIsDisturbed(false);
+
+        currentStep = 12;
+        currentWaitingFrame = null;
+
+    }
+
     /**
-     * 
      * utils
      * 
      */
