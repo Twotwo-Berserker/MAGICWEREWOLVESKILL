@@ -42,7 +42,7 @@ public class WerewolfAction {
 
         // 显示动刀目标列表并让狼人选择
         for (Player werewolf : aliveWerewolves) {
-            PlayerFrame wolfFrame = getPlayerFrame(werewolf);
+            PlayerFrame wolfFrame = game.getPlayerFrame(werewolf.getRole());
             // 获取所有可被刀的目标（存活且不在墙内的玩家）
             List<Player> targets = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(), wolfFrame.getPlayer(),
                     0);
@@ -63,10 +63,7 @@ public class WerewolfAction {
                 continue;
             }
             if (wolfFrame != null) {
-                if (targets.isEmpty()) {
-                    wolfFrame.updateInfo("没有可刀的目标，跳过本轮动刀");
-                    continue;
-                }
+                // 就算没人在也可选墙杀
                 showKillSelection(wolfFrame, targets);
             }
         }
@@ -183,7 +180,7 @@ public class WerewolfAction {
                                 game.updateCurrentProcess();
                                 game.processNextStep();
                                 playerFrame.hideInputArea();
-                                getPlayerFrame(anotherWolf).hideInputArea();
+                                game.getPlayerFrame(anotherWolf.getRole()).hideInputArea();
                             }
 
                         });
@@ -230,17 +227,5 @@ public class WerewolfAction {
                 frame.updateInfo(message);
             }
         }
-    }
-
-    /**
-     * 根据玩家获取对应的窗口
-     */
-    private PlayerFrame getPlayerFrame(Player player) {
-        for (PlayerFrame frame : game.getPlayerFrames()) {
-            if (frame.getPlayer().equals(player)) {
-                return frame;
-            }
-        }
-        return null;
     }
 }

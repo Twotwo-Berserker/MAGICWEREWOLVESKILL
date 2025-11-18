@@ -7,6 +7,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import com.twotwo.model.*;
+import com.twotwo.model.Role.RoleType;
 import com.twotwo.ui.*;
 import com.twotwo.util.*;
 
@@ -16,7 +17,7 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = 12; // 之后改成-1
+    private int currentStep = -1; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
 
     // 其他状态管理对象...
@@ -81,9 +82,10 @@ public class Game {
          */
 
         // 测试
-        processNextStep();
+        // processNextStep();
+
         // 目前测试，直接厨娘绑定然后进入第一天
-        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
@@ -92,7 +94,7 @@ public class Game {
             pf.updateInfo("===== 第 " + day + " 天  =====");
         }
         // 启动第一步流程（护行动）
-        // currentStep = 0; // 目前测试阶段，不用从0开始
+        currentStep = 0; // 目前测试阶段，不用从0开始
         processNextStep();
     }
 
@@ -117,8 +119,12 @@ public class Game {
             case 5: // 步骤6：所有人行动
                 SkillExecutor.SHINEBLUE_Skill(this);
                 SkillExecutor.DETECTIVE_Skill(this);
+                setSkillButtonVisible(Role.RoleType.HAMSTER, true);
+                setSkillButtonVisible(Role.RoleType.WITCH, true);
                 break;
             case 6: // 步骤7：打印死亡情况
+                setSkillButtonVisible(Role.RoleType.HAMSTER, false);
+                setSkillButtonVisible(Role.RoleType.WITCH, false);
                 for (PlayerFrame pf : playerFrames) {
                     pf.updateInfo("===== 第 " + day + " 天 死亡情况 =====");
                     pf.updateInfo(PlayerListUtil.getTodayDeadPlayerList(players, this));
@@ -529,6 +535,46 @@ public class Game {
         }
     }
 
+    /**
+     * 控制指定角色的Skill按钮可见性
+     * 
+     * @param roleType 角色类型
+     * @param visible  是否可见
+     */
+    public void setSkillButtonVisible(Role.RoleType roleType, boolean visible) {
+        // 查找指定角色的玩家窗口
+        PlayerFrame targetFrame = playerFrames.stream()
+                .filter(pf -> pf.getPlayer().getRole() == roleType && pf.getPlayer().isAlive())
+                .findFirst()
+                .orElse(null);
+
+        if (targetFrame != null) {
+            // 在Swing线程中更新UI
+            SwingUtilities.invokeLater(() -> {
+                targetFrame.getSkillBtn().setVisible(visible);
+            });
+        }
+    }
+
+    /*
+     * Skill按钮触发
+     */
+    public void useSkill(Player player) {
+        if (player == null || !player.isAlive()) {
+            return;
+        }
+        // 调用 SkillExecutor 执行对应角色的技能
+        SkillExecutor.executeSkill(player, this);
+    }
+
+    // 获取指定角色界面
+    public PlayerFrame getPlayerFrame(Role.RoleType roleType) {
+        return playerFrames.stream()
+                .filter(pf -> pf.getPlayer().getRole() == roleType)
+                .findFirst()
+                .orElse(null);
+    }
+
     // getters
     // 获取存活玩家
     public List<Player> getAlivePlayers() {
@@ -600,6 +646,7 @@ public class Game {
     public void setCurrentStep(int step) {
         this.currentStep = step;
     }
+
     // 记录准备状态的方法
     /*
      * public void addReadyPlayer() {

@@ -4,6 +4,7 @@ import java.util.*;
 
 import com.twotwo.logic.*;
 import com.twotwo.model.*;
+import com.twotwo.ui.PlayerFrame;
 
 // 生成玩家列表字符串
 public class PlayerListUtil {
@@ -22,6 +23,7 @@ public class PlayerListUtil {
         return sb.toString();
     }
 
+    // 所有玩家中下标为index的玩家
     public static Player getPlayer(List<Player> players, int index) {
         if (index < 1 || index > players.size()) {
             return null;
@@ -45,6 +47,7 @@ public class PlayerListUtil {
         return sb.toString();
     }
 
+    // 除自身外的所有玩家中下标为index的玩家
     public static Player getOtherPlayer(List<Player> players, Player self, int index) {
         int count = 0;
         for (Player p : players) {
@@ -74,6 +77,7 @@ public class PlayerListUtil {
         return sb.toString();
     }
 
+    // 存活玩家中下标为index的玩家
     public static Player getAlivePlayer(List<Player> players, int index) {
         int count = 0;
         for (Player p : players) {
@@ -103,6 +107,7 @@ public class PlayerListUtil {
         return sb.toString();
     }
 
+    // 除自身外的存活玩家中下标为index的玩家
     public static Player getOtherAlivePlayer(List<Player> players, Player self, int index) {
         int count = 0;
         for (Player p : players) {
@@ -116,7 +121,7 @@ public class PlayerListUtil {
         return null;
     }
 
-    // 同一地点的玩家
+    // 同一地点的玩家列表
     public static List<Player> getSameLocationPlayerList(List<Player> players, Player self, int SeeDetective) {
         List<Player> sameLocationPlayers = new ArrayList<>();
         for (Player p : players) {
@@ -129,7 +134,7 @@ public class PlayerListUtil {
         return sameLocationPlayers;
     }
 
-    // 当天死亡名单
+    // 当天死亡玩家列表
     public static String getTodayDeadPlayerList(List<Player> players, Game game) {
         StringBuilder sb = new StringBuilder("今日死亡玩家列表：\n");
         int index = 1;
@@ -148,4 +153,6 @@ public class PlayerListUtil {
         }
         return sb.toString();
     }
+
+
 }

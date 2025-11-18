@@ -14,6 +14,7 @@ public class PlayerFrame extends JFrame {
     private Game game;
     private JTextArea infoArea; // 显示信息
     private JScrollPane scrollPane; // 滚动面板
+    private JButton skillBtn; // 技能按钮
     private JTextField inputField; // 输入数字的文本框
     private JPanel inputPanel; // 输入区域面板
     private JButton confirmBtn; // 确认按钮
@@ -43,9 +44,20 @@ public class PlayerFrame extends JFrame {
         scrollPane = new JScrollPane(infoArea);
         add(scrollPane, BorderLayout.CENTER);
 
+        // 技能按钮面板（放在输入区域上方）
+        JPanel skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        skillBtn = new JButton("技能");
+        skillBtn.setVisible(false); // 默认隐藏
+        skillBtn.addActionListener(e -> {
+            // 按钮点击时，调用 Game 类的方法处理技能使用
+            game.useSkill(player);
+        });
+        skillPanel.add(skillBtn);
+        add(skillPanel, BorderLayout.NORTH); // 添加到北部区域
+
         // 输入区域（底部）：文本框 + 确认按钮
         inputPanel = new JPanel(new FlowLayout());
-        inputField = new JTextField(10); 
+        inputField = new JTextField(10);
         confirmBtn = new JButton("确认");
         EnterKeyUtil.pressEnterKey(this, confirmBtn);
         // 确认按钮点击事件：提交输入
@@ -137,5 +149,9 @@ public class PlayerFrame extends JFrame {
 
     public CountdownUtil getCountdownUtil() {
         return countdownUtil;
+    }
+
+    public JButton getSkillBtn() {
+        return skillBtn;
     }
 }

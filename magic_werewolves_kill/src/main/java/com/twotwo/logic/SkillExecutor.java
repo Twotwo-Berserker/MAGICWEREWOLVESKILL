@@ -7,13 +7,30 @@ import com.twotwo.ui.*;
 import com.twotwo.util.*;
 
 public class SkillExecutor {
+    public static void executeSkill(Player player, Game game) {
+        switch (player.getRole()) {
+            // 蓝金和侦探的技能是被动触发，不处理
+            // 仓鼠
+            case HAMSTER:
+                PlayerFrame hamsterFrame = game.getPlayerFrame(Role.RoleType.HAMSTER);
+                hamsterFrame.updateInfo("请输入自爆的对象：");
+                hamsterFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
+                hamsterFrame.showInputArea();
+                HAMSTER_Skill(game, player.getRole());  //这里有问题
+                break;
+            // 魔女
+            case WITCH:
+                WITCH_Skill(game, player);
+                break;
+            default:
+                break;
+        }
+    }
+
     // 蓝金警觉
     public static void SHINEBLUE_Skill(Game game) {
         // 查找蓝金的界面
-        PlayerFrame shineBlueFrame = game.getPlayerFrames().stream()
-                .filter(pf -> pf.getPlayer().getRole() == Role.RoleType.SHINEBLUE)
-                .findFirst()
-                .orElse(null);
+        PlayerFrame shineBlueFrame = game.getPlayerFrame(Role.RoleType.SHINEBLUE);
         if (shineBlueFrame.getPlayer().getCamp() == Camp.CampType.GOOD) {
             List<Player> sameLocationPlayers = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(),
                     shineBlueFrame.getPlayer(), 1);
@@ -43,18 +60,15 @@ public class SkillExecutor {
     }
 
     public static void DETECTIVE_Skill(Game game) {
-        PlayerFrame detectivFrame = game.getPlayerFrames().stream()
-                .filter(pf -> pf.getPlayer().getRole() == Role.RoleType.DETECTIVE)
-                .findFirst()
-                .orElse(null);
-        if (detectivFrame.getPlayer().isInWall()) {
+        PlayerFrame detectiveFrame = game.getPlayerFrame(Role.RoleType.DETECTIVE);
+        if (detectiveFrame.getPlayer().isInWall()) {
             List<Player> sameLocationPlayers = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(),
-                    detectivFrame.getPlayer(), 0);
+                    detectiveFrame.getPlayer(), 0);
             StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
             for (Player sp : sameLocationPlayers) {
                 sb.append("- ").append(sp.getName()).append("\n");
             }
-            detectivFrame.updateInfo(sb.toString());
+            detectiveFrame.updateInfo(sb.toString());
         }
     }
 
@@ -70,6 +84,19 @@ public class SkillExecutor {
                 }
                 break;
             }
+        }
+    }
+
+    public static void WITCH_Skill(Game game, Player target) {
+        PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
+        PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
+        if (target.getCamp() == witchFrame.getPlayer().getCamp()) {
+            witchFrame.getPlayer().setAlive(false);
+            witchFrame.updateInfo("您攻击了队友，自身死亡！");
+        } else {
+            target.setAlive(false);
+            witchFrame.updateInfo("您攻击了敌人，敌人死亡！");
+            targetFrame.updateInfo("您被魔女光波击中，死亡！");
         }
     }
 }
