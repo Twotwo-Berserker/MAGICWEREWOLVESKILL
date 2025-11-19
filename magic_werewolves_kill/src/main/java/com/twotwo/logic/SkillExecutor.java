@@ -16,11 +16,15 @@ public class SkillExecutor {
                 hamsterFrame.updateInfo("请输入自爆的对象：");
                 hamsterFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
                 hamsterFrame.showInputArea();
-                HAMSTER_Skill(game, player.getRole());  //这里有问题
+                HAMSTER_Skill(game, player.getRole()); // 这里有问题
                 break;
             // 魔女
             case WITCH:
                 WITCH_Skill(game, player);
+                break;
+            // 人偶师
+            case DOLLMAKER:
+                DOLLMAKER_Skill(game, player);
                 break;
             default:
                 break;
@@ -55,8 +59,8 @@ public class SkillExecutor {
             }
         }
 
-        game.setCurrentStep(game.getCurrentStep() + 1);
-        game.processNextStep();
+        // game.setCurrentStep(game.getCurrentStep() + 1);
+        // game.processNextStep();
     }
 
     public static void DETECTIVE_Skill(Game game) {
@@ -73,23 +77,22 @@ public class SkillExecutor {
     }
 
     public static void HAMSTER_Skill(Game game, Role.RoleType target) {
-        // 仓鼠自爆
-        List<Player> players = game.getPlayers();
-        for (Player p : players) {
-            if ((p.getRole() == target || p.getRole() == Role.RoleType.HAMSTER) && p.isAlive()) {
-                p.setAlive(false); // 目标角色和仓鼠死亡
-                // 更新所有玩家界面
-                for (PlayerFrame pf : game.getPlayerFrames()) {
-                    pf.updateInfo(" 仓鼠自爆，杀死了：" + p.getName() + "！");
-                }
-                break;
-            }
+        PlayerFrame hamsterFrame = game.getPlayerFrame(Role.RoleType.HAMSTER);
+        PlayerFrame targetFrame = game.getPlayerFrame(target);
+        if (hamsterFrame.getPlayer().getSkillTimes() < 1 &&
+                hamsterFrame.getPlayer().isAlive() && targetFrame.getPlayer().isAlive()) {
+            hamsterFrame.getPlayer().incrementSkillTimes();
+            hamsterFrame.getPlayer().setAlive(false);
+            targetFrame.getPlayer().setAlive(false);
+            hamsterFrame.updateInfo("您自爆了，带走了" + targetFrame.getPlayer().getName() + "！");
+            targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
         }
     }
 
     public static void WITCH_Skill(Game game, Player target) {
         PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
+        witchFrame.getPlayer().incrementSkillTimes();
         if (target.getCamp() == witchFrame.getPlayer().getCamp()) {
             witchFrame.getPlayer().setAlive(false);
             witchFrame.updateInfo("您攻击了队友，自身死亡！");
@@ -99,4 +102,16 @@ public class SkillExecutor {
             targetFrame.updateInfo("您被魔女光波击中，死亡！");
         }
     }
+
+    public static void DOLLMAKER_Skill(Game game, Player target) {
+        PlayerFrame dollmakerFrame = game.getPlayerFrame(Role.RoleType.DOLLMAKER);
+        PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
+        if (dollmakerFrame.getPlayer().getSkillTimes() < 1 && !target.isAlive()) {
+            dollmakerFrame.getPlayer().incrementSkillTimes();
+            target.setAlive(true);
+            dollmakerFrame.updateInfo("您复活了" + target.getName() + "！");
+            targetFrame.updateInfo("您被人偶师复活了！");
+        }
+    }
+
 }

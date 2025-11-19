@@ -543,10 +543,7 @@ public class Game {
      */
     public void setSkillButtonVisible(Role.RoleType roleType, boolean visible) {
         // 查找指定角色的玩家窗口
-        PlayerFrame targetFrame = playerFrames.stream()
-                .filter(pf -> pf.getPlayer().getRole() == roleType && pf.getPlayer().isAlive())
-                .findFirst()
-                .orElse(null);
+        PlayerFrame targetFrame = getPlayerFrame(roleType);
 
         if (targetFrame != null) {
             // 在Swing线程中更新UI

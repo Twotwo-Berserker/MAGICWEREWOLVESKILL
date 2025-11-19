@@ -44,6 +44,9 @@ public class PlayerFrame extends JFrame {
         scrollPane = new JScrollPane(infoArea);
         add(scrollPane, BorderLayout.CENTER);
 
+        // 技能按钮与输入区域的组合面板
+        JPanel southContainer = new JPanel(new BorderLayout()); // 垂直布局容器
+
         // 技能按钮面板（放在输入区域上方）
         JPanel skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         skillBtn = new JButton("技能");
@@ -53,7 +56,7 @@ public class PlayerFrame extends JFrame {
             game.useSkill(player);
         });
         skillPanel.add(skillBtn);
-        add(skillPanel, BorderLayout.NORTH); // 添加到北部区域
+        southContainer.add(skillPanel, BorderLayout.NORTH); // 添加到组合面板的上方
 
         // 输入区域（底部）：文本框 + 确认按钮
         inputPanel = new JPanel(new FlowLayout());
@@ -65,7 +68,9 @@ public class PlayerFrame extends JFrame {
         inputPanel.add(new JLabel("请输入："));
         inputPanel.add(inputField);
         inputPanel.add(confirmBtn);
-        add(inputPanel, BorderLayout.SOUTH);
+        southContainer.add(inputPanel, BorderLayout.SOUTH); // 添加到组合面板的下方
+
+        add(southContainer, BorderLayout.SOUTH); // 将组合面板添加到窗口的南部区域
 
         // 初始隐藏输入区域（需要时再显示）
         inputPanel.setVisible(false);
@@ -74,7 +79,7 @@ public class PlayerFrame extends JFrame {
         URL iconUrl = DataUtil.iconUrl;
         IconUtil.setWindowIcon(this, iconUrl);
 
-        setResizable(false); // 暂时禁止调整窗口大小
+        setResizable(true); // 暂时禁止调整窗口大小
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setVisible(true);

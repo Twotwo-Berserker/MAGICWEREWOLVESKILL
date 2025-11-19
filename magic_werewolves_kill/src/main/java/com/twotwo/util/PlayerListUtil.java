@@ -1,6 +1,7 @@
 package com.twotwo.util;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import com.twotwo.logic.*;
 import com.twotwo.model.*;
@@ -153,6 +154,27 @@ public class PlayerListUtil {
         }
         return sb.toString();
     }
+
+    // 过去死亡玩家列表
+    public static String getPastDeadPlayerList(List<Player> players, Game game) {
+        StringBuilder sb = new StringBuilder("死亡玩家列表：\n");
+        int index = 1;
+        for (Player p : players) {
+            if (!p.isAlive() && p.getDeathDay() != game.getCurrentDay()) {
+                sb.append(index).append(". ")
+                        .append(p.getName())
+                        .append("\n");
+                index++;
+            }
+        }
+        sb.setLength(sb.length() - 1);
+        // 如果无人死亡
+        if (index == 1) {
+            return "所有玩家均存活。";
+        }
+        return sb.toString();
+    }
+
 
 
 }
