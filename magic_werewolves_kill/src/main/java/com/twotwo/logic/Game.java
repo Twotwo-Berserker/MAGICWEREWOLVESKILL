@@ -118,10 +118,21 @@ public class Game {
                 SkillExecutor.DETECTIVE_Skill(this);
                 werewolfAction.processWerewolfKill();
                 break;
-            case 5: // 步骤6：所有人行动
+            case 5: // 步骤6：所有人行动（关键步骤）
                 // 貌似可以放到startRoleAction里
                 setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.WITCH, true);
+
+                notifyAllPlayers("行动时间...");
+                // 延迟20s
+                SwingUtilities.invokeLater(() -> {
+                    Timer timer = new Timer(20000, e -> {
+                        currentStep++;
+                        processNextStep();
+                    });
+                    timer.setRepeats(false); // 只执行一次
+                    timer.start();
+                });
                 break;
             case 6: // 步骤7：打印死亡情况
                 setSkillButtonVisible(Role.RoleType.HAMSTER, false);
@@ -140,10 +151,9 @@ public class Game {
                 werewolfAction.werewolfPrivateChat();
                 break;
             case 9: // 步骤10：进聊天室
-                // 延迟2秒
+                notifyAllPlayers("进入聊天室...");
                 SwingUtilities.invokeLater(() -> {
                     Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("进入聊天室...");
                         currentStep++;
                         processNextStep();
                     });
@@ -152,9 +162,9 @@ public class Game {
                 });
                 break;
             case 10: // 步骤11：大小姐选择顺序
+                notifyAllPlayers("大小姐选择发言顺序...");
                 SwingUtilities.invokeLater(() -> {
                     Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("大小姐选择发言顺序...");
                         currentStep++;
                         processNextStep();
                     });
@@ -163,6 +173,8 @@ public class Game {
                 });
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
+                setSkillButtonVisible(Role.RoleType.LADY, true);
+
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
                 // 最后由大小姐总结归票
                 aliveFrames.add(playerFrames.stream()
@@ -176,6 +188,7 @@ public class Game {
                 startRoleAction(Role.RoleType.LITTLEYUAN, "请输入要干扰的玩家编号：");
                 break;
             case 13: // 步骤14：投票
+                setSkillButtonVisible(Role.RoleType.LADY, false);
                 SwingUtilities.invokeLater(() -> {
                     Timer timer = new Timer(2000, e -> {
                         notifyAllPlayers("投票环节...");
@@ -550,13 +563,17 @@ public class Game {
         // 查找指定角色的玩家窗口
         PlayerFrame targetFrame = getPlayerFrame(roleType);
 
+        int SkillTimes = targetFrame != null ? targetFrame.getPlayer().getSkillTimes() : 0;
+        final boolean visibleFlag = ((roleType == Role.RoleType.LADY
+                || roleType == Role.RoleType.DOLLMAKER) && SkillTimes > 0) ? false : visible;
+
         if (targetFrame != null && targetFrame.getPlayer().isAlive()) {
             // 在Swing线程中更新UI
             SwingUtilities.invokeLater(() -> {
-                if (visible) {
+                if (visibleFlag) {
                     targetFrame.getSouthContainer().setVisible(true);
                 }
-                targetFrame.getSkillBtn().setVisible(visible);
+                targetFrame.getSkillBtn().setVisible(visibleFlag);
             });
         }
     }
@@ -578,6 +595,19 @@ public class Game {
                 .filter(pf -> pf.getPlayer().getRole() == roleType)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * 游戏结束
+     * 
+     * @return
+     */
+    public void setGameOver(int result) {
+        if (result == 0) {
+            notifyAllPlayers("游戏结束，好人阵营获胜！");
+        } else if (result == 1) {
+            notifyAllPlayers("游戏结束，狼人阵营获胜！");
+        }
     }
 
     // getters
@@ -627,7 +657,7 @@ public class Game {
 
     // 更新当前流程状态给所有玩家(测试用)
     public void updateCurrentProcess() {
-        notifyAllPlayers("current process" + Integer.toString(currentStep));
+        notifyAllPlayers("current process" + Integer.toString(currentStep + 1));
     }
 
     // 获取存活人数

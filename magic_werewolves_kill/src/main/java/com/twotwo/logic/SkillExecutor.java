@@ -46,6 +46,7 @@ public class SkillExecutor {
                         shineBlueFrame.updateInfo("发现狼人存在！！！");
                         if (shineBlueFrame.getPlayer().getSkillTimes() == 0) {
                             shineBlueFrame.getPlayer().setAlive(true);
+                            shineBlueFrame.getPlayer().setDeathDay(-1);
                             shineBlueFrame.getPlayer().incrementSkillTimes();
                         }
                         StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
@@ -83,9 +84,8 @@ public class SkillExecutor {
         if (hamsterFrame.getPlayer().getSkillTimes() < 1 &&
                 hamsterFrame.getPlayer().isAlive() && targetFrame.getPlayer().isAlive()) {
             hamsterFrame.getPlayer().incrementSkillTimes();
-            hamsterFrame.getPlayer().setAlive(false);
-            targetFrame.getPlayer().setAlive(false);
-            targetFrame.getPlayer().setDeathDay(game.getCurrentDay());
+            hamsterFrame.getPlayer().Die(game);
+            targetFrame.getPlayer().Die(game);
             hamsterFrame.updateInfo("您自爆了，带走了" + targetFrame.getPlayer().getName() + "！");
             targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
         }
@@ -97,12 +97,10 @@ public class SkillExecutor {
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
         witchFrame.getPlayer().incrementSkillTimes();
         if (target.getCamp() == witchFrame.getPlayer().getCamp()) {
-            witchFrame.getPlayer().setAlive(false);
-            witchFrame.getPlayer().setDeathDay(game.getCurrentDay());
+            witchFrame.getPlayer().Die(game);
             witchFrame.updateInfo("您攻击了队友，自身死亡！");
         } else {
-            target.setAlive(false);
-            target.setDeathDay(game.getCurrentDay());
+            target.Die(game);
             witchFrame.updateInfo("您攻击了敌人，敌人死亡！");
             targetFrame.updateInfo("您被魔女光波击中，死亡！");
         }
@@ -114,6 +112,7 @@ public class SkillExecutor {
         if (dollmakerFrame.getPlayer().getSkillTimes() < 1 && !target.isAlive()) {
             dollmakerFrame.getPlayer().incrementSkillTimes();
             target.setAlive(true);
+            target.setDeathDay(-1);
             dollmakerFrame.updateInfo("您复活了" + target.getName() + "！");
             targetFrame.updateInfo("您被人偶师复活了！");
         }

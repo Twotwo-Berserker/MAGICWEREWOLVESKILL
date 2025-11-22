@@ -6,7 +6,7 @@ git push  # 推送到远程 GitHub 仓库（会自动使用之前关联的 origi
 二.延迟代码
 SwingUtilities.invokeLater(() -> {
                     Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("......");
+                        // 时间到后执行
                         currentStep++;
                         processNextStep();
                     });

@@ -16,6 +16,7 @@ public class PlayerFrame extends JFrame {
     private JScrollPane scrollPane; // 滚动面板
     private JPanel southContainer; // 下方容器面板
     private JButton skillBtn; // 技能按钮
+    private String skillName = "技能"; // 技能名称
     private JTextField inputField; // 输入数字的文本框
     private JPanel inputPanel; // 输入区域面板
     private JButton confirmBtn; // 确认按钮
@@ -26,6 +27,19 @@ public class PlayerFrame extends JFrame {
     public PlayerFrame(Player player, Game game) {
         this.player = player;
         this.game = game;
+        switch (this.player.getRole()) {
+            case HAMSTER:
+                this.skillName = "自爆";
+                break;
+            case WITCH:
+                this.skillName = "发射光波";
+                break;
+            case LADY:
+                this.skillName = "激光";
+                break;
+            default:
+                break;
+        }
         initUI();
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // 允许关闭窗口
     }
@@ -50,7 +64,7 @@ public class PlayerFrame extends JFrame {
 
         // 技能按钮面板（放在输入区域上方）
         JPanel skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        skillBtn = new JButton("技能");
+        skillBtn = new JButton(skillName);
         skillBtn.addActionListener(e -> {
             // 按钮点击时，调用 Game 类的方法处理技能使用
             game.useSkill(player);

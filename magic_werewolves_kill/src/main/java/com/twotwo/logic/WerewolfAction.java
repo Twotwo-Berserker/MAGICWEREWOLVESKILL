@@ -4,6 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import com.twotwo.logic.*;
 import com.twotwo.model.*;
@@ -107,8 +108,7 @@ public class WerewolfAction {
                     // 目标被守护或被厨娘绑定且厨娘在同一地点，刀人失败
                 } else {
                     // 执行刀人操作
-                    target.setAlive(false);
-                    target.setDeathDay(game.getCurrentDay());
+                    target.Die(game);
                 }
             } else if (targetIndex == targets.size()) {
                 // 选择了墙
@@ -119,8 +119,7 @@ public class WerewolfAction {
                         .orElse(null);
                 if (detective != null && detective.isInWall() && !detective.isBound()
                         && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation()) {
-                    detective.setAlive(false);
-                    detective.setDeathDay(game.getCurrentDay());
+                    detective.Die(game);
                 }
             } else {
                 wolfFrame.updateInfo("选择的编号无效，已跳过本次动刀");
@@ -158,6 +157,17 @@ public class WerewolfAction {
                 // 判断是否还存在队友
                 if (anotherWolf == null) {
                     playerFrame.updateInfo("狼人队友已死亡，正在跳过此环节...");
+                    SwingUtilities.invokeLater(() -> {
+                        Timer timer = new Timer(2000, e -> {
+                            game.setCurrentStep(9);
+                            game.updateCurrentProcess();
+                            game.processNextStep();
+                            playerFrame.hideInputArea();
+                        });
+                        timer.setRepeats(false);
+                        timer.start();
+                    });
+                    return;
                 } else {
                     // 确保在Swing线程中显示输入区域
                     SwingUtilities.invokeLater(() -> {
@@ -194,7 +204,7 @@ public class WerewolfAction {
             return;
         }
 
-        boolean sented = false; 
+        boolean sented = false;
         // 遍历所有玩家窗口，仅向存活狼人队友发送消息
         for (PlayerFrame receiverFrame : game.getPlayerFrames()) {
             // 排除发送者自身，且接收者必须是存活狼人

@@ -1,6 +1,7 @@
 package com.twotwo.model;
 
 import com.twotwo.logic.Game;
+import com.twotwo.logic.WinChecker;
 import com.twotwo.model.Camp.CampType;
 import com.twotwo.model.Location.LocationType;
 import com.twotwo.model.Role.RoleType;
@@ -131,7 +132,7 @@ public class Player {
     public void setIsDisturbed(boolean isDisturbed) {
         this.isDisturbed = isDisturbed;
     }
-    
+
     // 角色技能使用次数
     public int getSkillTimes() {
         return skillTimes;
@@ -140,7 +141,7 @@ public class Player {
     public void incrementSkillTimes() {
         this.skillTimes++;
     }
-    
+
     // 死亡天数
     public int getDeathDay() {
         return deathDay;
@@ -149,5 +150,19 @@ public class Player {
     public void setDeathDay(int deathDay) {
         this.deathDay = deathDay;
     }
-    
+
+    // 玩家死亡处理，判断游戏胜负
+    public void Die(Game game) {
+        if (this.alive) {
+            this.alive = false;
+            this.deathDay = game.getCurrentDay();
+            if (WinChecker.checkWerewolfWin(game) == 0) {
+                game.setGameOver(0);
+            }
+            if (WinChecker.checkWerewolfWin(game) == 1) {
+                game.setGameOver(1);
+            }
+        }
+    }
+
 }
