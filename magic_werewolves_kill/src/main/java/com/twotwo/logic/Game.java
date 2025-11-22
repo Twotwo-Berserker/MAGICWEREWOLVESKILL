@@ -114,11 +114,12 @@ public class Game {
                 startRoleAction(Role.RoleType.DETECTIVE, "请输入是否躲入墙内（1-是，0-否）：");
                 break;
             case 4: // 步骤5：狼人动刀
+                SkillExecutor.SHINEBLUE_Skill(this);
+                SkillExecutor.DETECTIVE_Skill(this);
                 werewolfAction.processWerewolfKill();
                 break;
             case 5: // 步骤6：所有人行动
-                SkillExecutor.SHINEBLUE_Skill(this);
-                SkillExecutor.DETECTIVE_Skill(this);
+                // 貌似可以放到startRoleAction里
                 setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.WITCH, true);
                 break;
@@ -442,6 +443,10 @@ public class Game {
         }
 
         // 推进到下一步
+        /**
+         * 注意：某些步骤可能需要等待多个玩家输入才能推进，
+         * 这里简化为单个玩家输入后直接推进，实际可根据需求进行调整
+         */
         currentStep++;
         updateCurrentProcess();
         processNextStep();
@@ -519,7 +524,7 @@ public class Game {
         if (IsDisturbedOne != null)
             IsDisturbedOne.setIsDisturbed(false);
 
-        currentStep = 12;
+        currentStep = -1;
         currentWaitingFrame = null;
 
     }
@@ -545,9 +550,12 @@ public class Game {
         // 查找指定角色的玩家窗口
         PlayerFrame targetFrame = getPlayerFrame(roleType);
 
-        if (targetFrame != null) {
+        if (targetFrame != null && targetFrame.getPlayer().isAlive()) {
             // 在Swing线程中更新UI
             SwingUtilities.invokeLater(() -> {
+                if (visible) {
+                    targetFrame.getSouthContainer().setVisible(true);
+                }
                 targetFrame.getSkillBtn().setVisible(visible);
             });
         }

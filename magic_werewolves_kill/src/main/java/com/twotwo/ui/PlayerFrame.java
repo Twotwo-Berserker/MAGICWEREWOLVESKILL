@@ -3,7 +3,7 @@ package com.twotwo.ui;
 import javax.swing.*;
 import java.awt.*;
 import java.net.URL;
-import java.awt.event.ActionEvent;
+import java.awt.event.*;
 
 import com.twotwo.logic.*;
 import com.twotwo.model.*;
@@ -14,6 +14,7 @@ public class PlayerFrame extends JFrame {
     private Game game;
     private JTextArea infoArea; // 显示信息
     private JScrollPane scrollPane; // 滚动面板
+    private JPanel southContainer; // 下方容器面板
     private JButton skillBtn; // 技能按钮
     private JTextField inputField; // 输入数字的文本框
     private JPanel inputPanel; // 输入区域面板
@@ -45,12 +46,11 @@ public class PlayerFrame extends JFrame {
         add(scrollPane, BorderLayout.CENTER);
 
         // 技能按钮与输入区域的组合面板
-        JPanel southContainer = new JPanel(new BorderLayout()); // 垂直布局容器
+        southContainer = new JPanel(new BorderLayout()); // 垂直布局容器
 
         // 技能按钮面板（放在输入区域上方）
         JPanel skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         skillBtn = new JButton("技能");
-        skillBtn.setVisible(false); // 默认隐藏
         skillBtn.addActionListener(e -> {
             // 按钮点击时，调用 Game 类的方法处理技能使用
             game.useSkill(player);
@@ -68,19 +68,38 @@ public class PlayerFrame extends JFrame {
         inputPanel.add(new JLabel("请输入："));
         inputPanel.add(inputField);
         inputPanel.add(confirmBtn);
+        // 为 inputPanel 添加组件监听器
+        inputPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentShown(ComponentEvent e) {
+                // 延迟确保UI组件已完成渲染后再请求焦点
+                SwingUtilities.invokeLater(() -> {
+                    // 强制请求焦点
+                    inputField.requestFocusInWindow();
+                    // 确保输入框可聚焦
+                    inputField.setFocusable(true);
+                    // 显示光标
+                    inputField.requestFocus();
+                });
+            }
+        });
+
         southContainer.add(inputPanel, BorderLayout.SOUTH); // 添加到组合面板的下方
 
         add(southContainer, BorderLayout.SOUTH); // 将组合面板添加到窗口的南部区域
 
-        // 初始隐藏输入区域（需要时再显示）
+        // 初始隐藏
+        southContainer.setVisible(false);
+        skillPanel.setVisible(false);
+        skillBtn.setVisible(false);
         inputPanel.setVisible(false);
 
         // 设置窗口图标
         URL iconUrl = DataUtil.iconUrl;
         IconUtil.setWindowIcon(this, iconUrl);
 
-        setResizable(true); // 暂时禁止调整窗口大小
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false); // 暂时禁止调整窗口大小
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // 允许关闭窗口，不影响其他窗口
         setLocationRelativeTo(null);
         setVisible(true);
     }
@@ -103,10 +122,11 @@ public class PlayerFrame extends JFrame {
     // 显示输入区域（需要玩家操作时调用）
     public void showInputArea() {
         SwingUtilities.invokeLater(() -> {
+            southContainer.setVisible(true);
             inputPanel.setVisible(true);
             inputField.setText(""); // 清空输入框
-            inputField.requestFocusInWindow(); // 聚焦到输入框
             isInputReady = false;
+            inputField.requestFocusInWindow(); // 请求焦点
         });
     }
 
@@ -142,6 +162,10 @@ public class PlayerFrame extends JFrame {
 
     public JScrollPane getScrollPane() {
         return scrollPane;
+    }
+
+    public JPanel getSouthContainer() {
+        return southContainer;
     }
 
     public JTextField getInputField() {

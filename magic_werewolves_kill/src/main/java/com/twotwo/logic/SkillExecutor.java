@@ -44,7 +44,6 @@ public class SkillExecutor {
                 for (Player p : sameLocationPlayers) {
                     if (p.getCamp() == Camp.CampType.WEREWOLF) {
                         shineBlueFrame.updateInfo("发现狼人存在！！！");
-                        // shineBlueFrame.getPlayer().setIsGuarded(true); // 免疫狼刀（如果之后改到狼刀前可用）
                         if (shineBlueFrame.getPlayer().getSkillTimes() == 0) {
                             shineBlueFrame.getPlayer().setAlive(true);
                             shineBlueFrame.getPlayer().incrementSkillTimes();
@@ -63,6 +62,7 @@ public class SkillExecutor {
         // game.processNextStep();
     }
 
+    // 侦探视野
     public static void DETECTIVE_Skill(Game game) {
         PlayerFrame detectiveFrame = game.getPlayerFrame(Role.RoleType.DETECTIVE);
         if (detectiveFrame.getPlayer().isInWall()) {
@@ -76,6 +76,7 @@ public class SkillExecutor {
         }
     }
 
+    // 仓鼠自爆
     public static void HAMSTER_Skill(Game game, Role.RoleType target) {
         PlayerFrame hamsterFrame = game.getPlayerFrame(Role.RoleType.HAMSTER);
         PlayerFrame targetFrame = game.getPlayerFrame(target);
@@ -84,20 +85,24 @@ public class SkillExecutor {
             hamsterFrame.getPlayer().incrementSkillTimes();
             hamsterFrame.getPlayer().setAlive(false);
             targetFrame.getPlayer().setAlive(false);
+            targetFrame.getPlayer().setDeathDay(game.getCurrentDay());
             hamsterFrame.updateInfo("您自爆了，带走了" + targetFrame.getPlayer().getName() + "！");
             targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
         }
     }
 
+    // 魔女攻击
     public static void WITCH_Skill(Game game, Player target) {
         PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
         witchFrame.getPlayer().incrementSkillTimes();
         if (target.getCamp() == witchFrame.getPlayer().getCamp()) {
             witchFrame.getPlayer().setAlive(false);
+            witchFrame.getPlayer().setDeathDay(game.getCurrentDay());
             witchFrame.updateInfo("您攻击了队友，自身死亡！");
         } else {
             target.setAlive(false);
+            target.setDeathDay(game.getCurrentDay());
             witchFrame.updateInfo("您攻击了敌人，敌人死亡！");
             targetFrame.updateInfo("您被魔女光波击中，死亡！");
         }

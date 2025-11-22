@@ -56,7 +56,7 @@ public class WerewolfAction {
             }
 
             // 检查是否被妖精蒙蔽
-            if (werewolf.isDeceived() && game.getCurrentDay() <= 6) {
+            if (werewolf.isDeceived() && game.getCurrentStep() <= 6) {
                 wolfFrame.updateInfo("你已被妖精蒙蔽，无法行动。");
                 Finished++;
                 advanceToNextStep();
@@ -109,10 +109,6 @@ public class WerewolfAction {
                     // 执行刀人操作
                     target.setAlive(false);
                     target.setDeathDay(game.getCurrentDay());
-                    // 通知所有玩家结果
-                    // notifyAllPlayers(String.format("狼人刀了%s，%s已死亡",
-                    // target.getName(),
-                    // target.getName()));
                 }
             } else if (targetIndex == targets.size()) {
                 // 选择了墙
@@ -125,7 +121,6 @@ public class WerewolfAction {
                         && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation()) {
                     detective.setAlive(false);
                     detective.setDeathDay(game.getCurrentDay());
-                    // notifyAllPlayers("狼人刀了侦探，侦探已死亡");
                 }
             } else {
                 wolfFrame.updateInfo("选择的编号无效，已跳过本次动刀");
