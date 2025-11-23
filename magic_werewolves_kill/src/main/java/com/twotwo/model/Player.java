@@ -60,6 +60,10 @@ public class Player {
         return alive;
     }
 
+    public boolean GameAlive(Game game) {
+        return alive || !alive && deathDay != game.getCurrentDay();
+    }
+
     public void setAlive(boolean alive) {
         this.alive = alive;
     }

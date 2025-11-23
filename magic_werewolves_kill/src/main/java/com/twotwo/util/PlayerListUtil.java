@@ -135,6 +135,14 @@ public class PlayerListUtil {
         return sameLocationPlayers;
     }
 
+    public static String getSameLocationPlayerListString(List<Player> sameLocationPlayers) {
+        StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
+        for (Player sp : sameLocationPlayers) {
+            sb.append("- ").append(sp.getName()).append("\n");
+        }
+        return sb.toString();
+    }
+
     // 当天死亡玩家列表
     public static String getTodayDeadPlayerList(List<Player> players, Game game) {
         StringBuilder sb = new StringBuilder("今日死亡玩家列表：\n");
@@ -174,7 +182,5 @@ public class PlayerListUtil {
         }
         return sb.toString();
     }
-
-
 
 }

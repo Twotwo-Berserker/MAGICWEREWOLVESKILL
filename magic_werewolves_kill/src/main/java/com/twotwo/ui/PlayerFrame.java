@@ -15,6 +15,7 @@ public class PlayerFrame extends JFrame {
     private JTextArea infoArea; // 显示信息
     private JScrollPane scrollPane; // 滚动面板
     private JPanel southContainer; // 下方容器面板
+    private JPanel skillPanel; // 技能按钮面板
     private JButton skillBtn; // 技能按钮
     private String skillName = "技能"; // 技能名称
     private JTextField inputField; // 输入数字的文本框
@@ -63,7 +64,7 @@ public class PlayerFrame extends JFrame {
         southContainer = new JPanel(new BorderLayout()); // 垂直布局容器
 
         // 技能按钮面板（放在输入区域上方）
-        JPanel skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        skillPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         skillBtn = new JButton(skillName);
         skillBtn.addActionListener(e -> {
             // 按钮点击时，调用 Game 类的方法处理技能使用
@@ -104,7 +105,7 @@ public class PlayerFrame extends JFrame {
 
         // 初始隐藏
         southContainer.setVisible(false);
-        skillPanel.setVisible(false);
+        skillPanel.setVisible(false); // 可skillPanel是临时变量
         skillBtn.setVisible(false);
         inputPanel.setVisible(false);
 
@@ -192,6 +193,10 @@ public class PlayerFrame extends JFrame {
 
     public CountdownUtil getCountdownUtil() {
         return countdownUtil;
+    }
+
+    public JPanel getSkillPanel() {
+        return skillPanel;
     }
 
     public JButton getSkillBtn() {

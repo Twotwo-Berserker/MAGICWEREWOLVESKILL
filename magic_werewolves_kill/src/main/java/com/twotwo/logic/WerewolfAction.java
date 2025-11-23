@@ -113,12 +113,9 @@ public class WerewolfAction {
             } else if (targetIndex == targets.size()) {
                 // 选择了墙
                 // 查询侦探是否在墙内
-                Player detective = game.getPlayers().stream()
-                        .filter(player -> player.getRole() == Role.RoleType.DETECTIVE)
-                        .findFirst()
-                        .orElse(null);
-                if (detective != null && detective.isInWall() && !detective.isBound()
-                        && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation()) {
+                Player detective = game.getPlayer(Role.RoleType.DETECTIVE);
+                if (detective != null && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation() 
+                        && detective.isInWall() && !detective.isGuarded()) {
                     detective.Die(game);
                 }
             } else {

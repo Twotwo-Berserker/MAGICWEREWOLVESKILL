@@ -17,7 +17,7 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = -1; // 之后改成-1
+    private int currentStep = 7; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
 
     // 其他状态管理对象...
@@ -81,11 +81,11 @@ public class Game {
          * processDay();
          */
 
-        // 测试
-        // processNextStep();
+        // 从中间开始测试
+        processNextStep();
 
         // 目前测试，直接厨娘绑定然后进入第一天
-        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
@@ -114,11 +114,13 @@ public class Game {
                 startRoleAction(Role.RoleType.DETECTIVE, "请输入是否躲入墙内（1-是，0-否）：");
                 break;
             case 4: // 步骤5：狼人动刀
-                SkillExecutor.SHINEBLUE_Skill(this);
-                SkillExecutor.DETECTIVE_Skill(this);
                 werewolfAction.processWerewolfKill();
                 break;
             case 5: // 步骤6：所有人行动（关键步骤）
+                // 蓝金和侦探被动技能
+                SkillExecutor.executeSkill(getPlayer(Role.RoleType.SHINEBLUE), this);
+                SkillExecutor.executeSkill(getPlayer(Role.RoleType.DETECTIVE), this);
+
                 // 貌似可以放到startRoleAction里
                 setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.WITCH, true);
@@ -567,12 +569,11 @@ public class Game {
         final boolean visibleFlag = ((roleType == Role.RoleType.LADY
                 || roleType == Role.RoleType.DOLLMAKER) && SkillTimes > 0) ? false : visible;
 
-        if (targetFrame != null && targetFrame.getPlayer().isAlive()) {
+        if (targetFrame != null && (targetFrame.getPlayer().isAlive() || !visibleFlag)) {
             // 在Swing线程中更新UI
             SwingUtilities.invokeLater(() -> {
-                if (visibleFlag) {
-                    targetFrame.getSouthContainer().setVisible(true);
-                }
+                targetFrame.getSouthContainer().setVisible(visibleFlag);
+                targetFrame.getSkillPanel().setVisible(visibleFlag);
                 targetFrame.getSkillBtn().setVisible(visibleFlag);
             });
         }
@@ -582,11 +583,19 @@ public class Game {
      * Skill按钮触发
      */
     public void useSkill(Player player) {
-        if (player == null || !player.isAlive()) {
+        if (player == null || !player.GameAlive(this)) {
             return;
         }
         // 调用 SkillExecutor 执行对应角色的技能
         SkillExecutor.executeSkill(player, this);
+    }
+
+    // 获取指定角色玩家
+    public Player getPlayer(Role.RoleType roleType) {
+        return players.stream()
+                .filter(player -> player.getRole() == roleType)
+                .findFirst()
+                .orElse(null);
     }
 
     // 获取指定角色界面
