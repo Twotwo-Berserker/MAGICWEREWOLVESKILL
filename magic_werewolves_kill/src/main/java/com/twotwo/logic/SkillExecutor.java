@@ -61,12 +61,9 @@ public class SkillExecutor {
                             shineBlue.setAlive(true);
                             shineBlue.setDeathDay(-1);
                             shineBlue.incrementSkillTimes();
-                            StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
-                            for (Player sp : sameLocationPlayers) {
-                                sb.append("- ").append(sp.getName()).append("\n");
-                            }
-                            shineBlueFrame.updateInfo(sb.toString());
+                            shineBlueFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListString(sameLocationPlayers));
                         }
+                        break; // 只需提示一次
                     }
                 }
             }
@@ -80,11 +77,7 @@ public class SkillExecutor {
         if (detective.isAlive() && detective.isInWall()) {
             List<Player> sameLocationPlayers = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(),
                     detective, 0);
-            StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
-            for (Player sp : sameLocationPlayers) {
-                sb.append("- ").append(sp.getName()).append("\n");
-            }
-            detectiveFrame.updateInfo(sb.toString());
+            detectiveFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListString(sameLocationPlayers));
         }
     }
 

@@ -17,7 +17,7 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = 7; // 之后改成-1
+    private int currentStep = -1; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
 
     // 其他状态管理对象...
@@ -82,10 +82,10 @@ public class Game {
          */
 
         // 从中间开始测试
-        processNextStep();
+        // processNextStep();
 
         // 目前测试，直接厨娘绑定然后进入第一天
-        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
