@@ -72,19 +72,10 @@ public class Game {
         // 显示所有玩家窗口
         playerFrames.forEach(pf -> pf.setVisible(true));
 
-        // 等多人游玩时，需要等待所有玩家点击进入游戏
-        /*
-         * for (PlayerFrame pf : playerFrames) {
-         * pf.updateInfo("正在等待玩家准备...");
-         * }
-         * if (allPlayersReady())
-         * processDay();
-         */
-
         // 从中间开始测试
         // processNextStep();
 
-        // 目前测试，直接厨娘绑定然后进入第一天
+        // 正式测试，开始厨娘绑定
         startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
@@ -121,20 +112,11 @@ public class Game {
                 SkillExecutor.executeSkill(getPlayer(Role.RoleType.SHINEBLUE), this);
                 SkillExecutor.executeSkill(getPlayer(Role.RoleType.DETECTIVE), this);
 
-                // 貌似可以放到startRoleAction里
+                // 令仓鼠和魔女的Skill按钮可见
                 setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.WITCH, true);
 
-                notifyAllPlayers("行动时间...");
-                // 延迟20s
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(20000, e -> {
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false); // 只执行一次
-                    timer.start();
-                });
+                Delay("行动时间...", 20000);
                 break;
             case 6: // 步骤7：打印死亡情况
                 setSkillButtonVisible(Role.RoleType.HAMSTER, false);
@@ -153,28 +135,13 @@ public class Game {
                 werewolfAction.werewolfPrivateChat();
                 break;
             case 9: // 步骤10：进聊天室
-                notifyAllPlayers("进入聊天室...");
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(2000, e -> {
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false); // 只执行一次
-                    timer.start();
-                });
+                Delay("进入聊天室...", 2000);
                 break;
             case 10: // 步骤11：大小姐选择顺序
-                notifyAllPlayers("大小姐选择发言顺序...");
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(2000, e -> {
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                });
+                Delay("大小姐选择发言顺序...", 2000);
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
+                setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.LADY, true);
 
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
@@ -190,38 +157,15 @@ public class Game {
                 startRoleAction(Role.RoleType.LITTLEYUAN, "请输入要干扰的玩家编号：");
                 break;
             case 13: // 步骤14：投票
+                setSkillButtonVisible(Role.RoleType.HAMSTER, false);
                 setSkillButtonVisible(Role.RoleType.LADY, false);
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("投票环节...");
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                });
+                Delay("投票环节...", 2000);
                 break;
             case 14: // 步骤15：公布投票结果
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("投票结果公布...");
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                });
+                Delay("投票结果公布...", 2000);
                 break;
-            case 15: // 步骤16：发表遗言，若被投出去的是仓鼠，可选择行动
-                SwingUtilities.invokeLater(() -> {
-                    Timer timer = new Timer(2000, e -> {
-                        notifyAllPlayers("发表遗言阶段...");
-                        currentStep++;
-                        processNextStep();
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                });
+            case 15: // 步骤16：发表遗言
+                Delay("发表遗言阶段...", 2000);
                 break;
             default:
                 // 当天流程结束
@@ -257,6 +201,15 @@ public class Game {
                 // 操作玩家特殊处理：检查是否被妖精蒙蔽
                 if (pf.getPlayer().isDeceived() && currentStep <= 6) {
                     pf.updateInfo("你已被妖精蒙蔽，无法行动。");
+                    currentStep++;
+                    processNextStep();
+                    return;
+                }
+
+                // 白雪若为狼人，不发动
+                if (pf.getPlayer().getRole() == Role.RoleType.SNOWWHITE
+                        && pf.getPlayer().getCamp() == Camp.CampType.WEREWOLF) {
+                    pf.updateInfo("正在跳过查验...");
                     currentStep++;
                     processNextStep();
                     return;
@@ -300,6 +253,41 @@ public class Game {
         // 公开发言阶段，防止取消输入框 之后优化代码
         if (currentStep == 11) {
             ChatUtil.publicChat(playerFrames, currentWaitingFrame, input);
+            return;
+        }
+
+        // 仓鼠自爆响应
+        if ((currentStep == 5 || currentStep == 11 || currentStep == 12)
+                && pf.getPlayer().getRole() == Role.RoleType.HAMSTER) {
+            try {
+                int targetIndex = Integer.parseInt(input);
+                Player Target = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
+                if (Target != null && !(currentStep == 5 && Target.isGuarded())) {
+                    SkillExecutor.handleHAMSTERInput(this, Target);
+                }
+            } catch (Exception e) {
+                pf.updateInfo("自爆失败！");
+            } finally {
+                setSkillButtonVisible(Role.RoleType.HAMSTER, false);
+            }
+
+            return;
+        }
+
+        // 魔女发射激光响应
+        if (currentStep == 5 && pf.getPlayer().getRole() == Role.RoleType.WITCH) {
+            try {
+                int targetIndex = Integer.parseInt(input);
+                Player Target = PlayerListUtil.getSameLocationPlayer(PlayerListUtil.getSameLocationPlayerList(
+                        players, pf.getPlayer(), 0), targetIndex);
+                if (Target != null) {
+                    SkillExecutor.handleWITCHInput(this, Target);
+                }
+            } catch (Exception e) {
+                pf.updateInfo("发射激光失败！");
+            } finally {
+                setSkillButtonVisible(Role.RoleType.WITCH, false);
+            }
             return;
         }
 
@@ -518,6 +506,7 @@ public class Game {
      * 一天结束，重置状态
      */
     private void resetDay() {
+        // 重置守护状态
         Player IsGuardedOne = players.stream()
                 .filter(player -> player.isGuarded())
                 .findFirst()
@@ -525,6 +514,7 @@ public class Game {
         if (IsGuardedOne != null)
             IsGuardedOne.setIsGuarded(false);
 
+        // 重置蒙蔽状态
         Player IsDeceivedOne = players.stream()
                 .filter(player -> player.isDeceived())
                 .findFirst()
@@ -532,12 +522,21 @@ public class Game {
         if (IsDeceivedOne != null)
             IsDeceivedOne.setIsDeceived(false);
 
+        // 重置干扰状态
         Player IsDisturbedOne = players.stream()
                 .filter(player -> player.isDisturbed())
                 .findFirst()
                 .orElse(null);
         if (IsDisturbedOne != null)
             IsDisturbedOne.setIsDisturbed(false);
+
+        // 重置侦探是否在墙内状态
+        Player detective = getPlayer(Role.RoleType.DETECTIVE);
+        if (detective != null) 
+            detective.setInWall(false);
+
+        // 重置当前地点
+        players.forEach(player -> player.setCurrentLocation(null));
 
         currentStep = -1;
         currentWaitingFrame = null;
@@ -555,12 +554,7 @@ public class Game {
         }
     }
 
-    /**
-     * 控制指定角色的Skill按钮可见性
-     * 
-     * @param roleType 角色类型
-     * @param visible  是否可见
-     */
+    // 控制指定角色的Skill按钮可见性
     public void setSkillButtonVisible(Role.RoleType roleType, boolean visible) {
         // 查找指定角色的玩家窗口
         PlayerFrame targetFrame = getPlayerFrame(roleType);
@@ -579,9 +573,7 @@ public class Game {
         }
     }
 
-    /*
-     * Skill按钮触发
-     */
+    // Skill按钮触发
     public void useSkill(Player player) {
         if (player == null || !player.GameAlive(this)) {
             return;
@@ -604,6 +596,19 @@ public class Game {
                 .filter(pf -> pf.getPlayer().getRole() == roleType)
                 .findFirst()
                 .orElse(null);
+    }
+
+    // 延迟执行下一步操作
+    public void Delay(String message, int milliseconds) {
+        notifyAllPlayers(message);
+        SwingUtilities.invokeLater(() -> {
+            Timer timer = new Timer(milliseconds, e -> {
+                currentStep++;
+                processNextStep();
+            });
+            timer.setRepeats(false); // 只执行一次
+            timer.start();
+        });
     }
 
     /**
@@ -690,20 +695,5 @@ public class Game {
     public void setCurrentStep(int step) {
         this.currentStep = step;
     }
-
-    // 记录准备状态的方法
-    /*
-     * public void addReadyPlayer() {
-     * if (readyCount < players.size()) {
-     * readyCount++;
-     * }
-     * }
-     * public boolean allPlayersReady() {
-     * return readyCount == players.size();
-     * }
-     * public int getReadyCount() {
-     * return readyCount;
-     * }
-     */
 
 }

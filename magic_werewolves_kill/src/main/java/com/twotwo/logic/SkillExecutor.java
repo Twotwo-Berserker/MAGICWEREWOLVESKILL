@@ -23,15 +23,14 @@ public class SkillExecutor {
                 hamsterFrame.updateInfo("请输入自爆的对象：");
                 hamsterFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
                 hamsterFrame.showInputArea();
-                HAMSTER_Skill(game, player.getRole()); // 这里有问题
                 break;
             // 魔女
             case WITCH:
                 PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
                 witchFrame.updateInfo("请输入发射激光的对象：");
-                witchFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
+                witchFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListToString(
+                        PlayerListUtil.getSameLocationPlayerList(game.getPlayers(), player, 0)));
                 witchFrame.showInputArea();
-                WITCH_Skill(game, player);
                 break;
             // 人偶师
             case DOLLMAKER:
@@ -61,7 +60,8 @@ public class SkillExecutor {
                             shineBlue.setAlive(true);
                             shineBlue.setDeathDay(-1);
                             shineBlue.incrementSkillTimes();
-                            shineBlueFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListString(sameLocationPlayers));
+                            shineBlueFrame
+                                    .updateInfo(PlayerListUtil.getSameLocationPlayerListToString(sameLocationPlayers));
                         }
                         break; // 只需提示一次
                     }
@@ -77,24 +77,28 @@ public class SkillExecutor {
         if (detective.isAlive() && detective.isInWall()) {
             List<Player> sameLocationPlayers = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(),
                     detective, 0);
-            detectiveFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListString(sameLocationPlayers));
+            detectiveFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListToString(sameLocationPlayers));
         }
     }
 
     // 仓鼠自爆
-    private static void HAMSTER_Skill(Game game, Role.RoleType target) {
+    private static void HAMSTER_Skill(Game game, Player target) {
         PlayerFrame hamsterFrame = game.getPlayerFrame(Role.RoleType.HAMSTER);
         Player hamster = hamsterFrame.getPlayer();
-        PlayerFrame targetFrame = game.getPlayerFrame(target);
-        Player targetPlayer = targetFrame.getPlayer();
-        if (hamster.getSkillTimes() < 1 &&
-                hamster.GameAlive(game) && targetPlayer.GameAlive(game)) {
+        PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
+        if (hamster.getSkillTimes() == 0 &&
+                hamster.GameAlive(game) && target.GameAlive(game)) {
             hamster.incrementSkillTimes();
             hamster.Die(game);
-            targetPlayer.Die(game);
-            hamsterFrame.updateInfo("您自爆了，带走了" + targetPlayer.getName() + "！");
+            target.Die(game);
+            hamsterFrame.updateInfo("您自爆了，带走了" + target.getName() + "！");
             targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
         }
+    }
+
+    // 对外接口，处理仓鼠输入
+    public static void handleHAMSTERInput(Game game, Player target) {
+        HAMSTER_Skill(game, target);
     }
 
     // 魔女攻击
@@ -102,20 +106,25 @@ public class SkillExecutor {
         PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
         Player witch = witchFrame.getPlayer();
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
-        Player targetPlayer = targetFrame.getPlayer();
         witch.incrementSkillTimes();
+        // 魔女光波无视护卫
         if (target.getCamp() == witch.getCamp()) {
             witch.Die(game);
             witchFrame.updateInfo("您攻击了队友，自身死亡！");
         } else {
-            targetPlayer.Die(game);
+            target.Die(game);
             witchFrame.updateInfo("您攻击了敌人，敌人死亡！");
             targetFrame.updateInfo("您被魔女光波击中，死亡！");
         }
     }
 
-   private static void DOLLMAKER_Skill(Game game, Player target) {
-       PlayerFrame dollmakerFrame = game.getPlayerFrame(Role.RoleType.DOLLMAKER);
+    // 对外接口，处理魔女输入
+    public static void handleWITCHInput(Game game, Player target) {
+        WITCH_Skill(game, target);
+    }
+
+    private static void DOLLMAKER_Skill(Game game, Player target) {
+        PlayerFrame dollmakerFrame = game.getPlayerFrame(Role.RoleType.DOLLMAKER);
         Player dollmaker = dollmakerFrame.getPlayer();
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
         Player targetPlayer = targetFrame.getPlayer();

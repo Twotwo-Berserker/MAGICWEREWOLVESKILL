@@ -135,12 +135,20 @@ public class PlayerListUtil {
         return sameLocationPlayers;
     }
 
-    public static String getSameLocationPlayerListString(List<Player> sameLocationPlayers) {
+    public static String getSameLocationPlayerListToString(List<Player> sameLocationPlayers) {
         StringBuilder sb = new StringBuilder("当前地点玩家列表：\n");
+        int index = 1;
         for (Player sp : sameLocationPlayers) {
-            sb.append("- ").append(sp.getName()).append("\n");
+            sb.append(index).append(". ")
+                        .append(sp.getName())
+                        .append("\n");
+            index++;
         }
         return sb.toString();
+    }
+
+    public static Player getSameLocationPlayer(List<Player> sameLocationPlayers, int index) {
+        return sameLocationPlayers.get(index - 1);
     }
 
     // 当天死亡玩家列表
