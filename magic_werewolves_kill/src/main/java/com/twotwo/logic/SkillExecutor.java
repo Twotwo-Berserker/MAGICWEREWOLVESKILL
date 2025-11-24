@@ -9,6 +9,10 @@ import com.twotwo.util.*;
 public class SkillExecutor {
     // 技能唯一接口，其他技能私有，通过此方法调用
     public static void executeSkill(Player player, Game game) {
+        if (player.isDeceived() && game.getCurrentStep() <= 6) {
+            game.getPlayerFrame(player.getRole()).updateInfo("你已被妖精蒙蔽，无法行动！");
+            return;
+        }
         switch (player.getRole()) {
             // 蓝金和侦探的技能是被动触发
             case SHINEBLUE:
@@ -28,13 +32,26 @@ public class SkillExecutor {
             case WITCH:
                 PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
                 witchFrame.updateInfo("请输入发射激光的对象：");
-                witchFrame.updateInfo(PlayerListUtil.getSameLocationPlayerListToString(
-                        PlayerListUtil.getSameLocationPlayerList(game.getPlayers(), player, 0)));
+                String sameLocationList = PlayerListUtil.getSameLocationPlayerListToString(
+                        PlayerListUtil.getSameLocationPlayerList(game.getPlayers(), player, 0));
+                witchFrame.updateInfo(sameLocationList);
+                if (sameLocationList == "当前地点无其他玩家。") {
+                    witchFrame.updateInfo("无法使用技能！");
+                    return;
+                }
                 witchFrame.showInputArea();
                 break;
             // 人偶师
             case DOLLMAKER:
-                DOLLMAKER_Skill(game, player);
+                PlayerFrame dollmakerFrame = game.getPlayerFrame(Role.RoleType.DOLLMAKER);
+                dollmakerFrame.updateInfo("请输入复活的对象：");
+                String pastDeadList = PlayerListUtil.getPastDeadPlayerList(game);
+                dollmakerFrame.updateInfo(pastDeadList);
+                if (pastDeadList == "所有玩家均存活。") {
+                    dollmakerFrame.updateInfo("没有可复活的对象!");
+                    return;
+                }
+                dollmakerFrame.showInputArea();
                 break;
             default:
                 break;
@@ -90,9 +107,11 @@ public class SkillExecutor {
                 hamster.GameAlive(game) && target.GameAlive(game)) {
             hamster.incrementSkillTimes();
             hamster.Die(game);
-            target.Die(game);
             hamsterFrame.updateInfo("您自爆了，带走了" + target.getName() + "！");
-            targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
+            if (!(game.getCurrentStep() == 5 && target.isGuarded())) {
+                target.Die(game);
+                targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
+            }
         }
     }
 
@@ -101,7 +120,7 @@ public class SkillExecutor {
         HAMSTER_Skill(game, target);
     }
 
-    // 魔女攻击
+    // 魔女光波
     private static void WITCH_Skill(Game game, Player target) {
         PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
         Player witch = witchFrame.getPlayer();
@@ -123,18 +142,23 @@ public class SkillExecutor {
         WITCH_Skill(game, target);
     }
 
+    // 人偶师复活
     private static void DOLLMAKER_Skill(Game game, Player target) {
         PlayerFrame dollmakerFrame = game.getPlayerFrame(Role.RoleType.DOLLMAKER);
         Player dollmaker = dollmakerFrame.getPlayer();
         PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
-        Player targetPlayer = targetFrame.getPlayer();
-        if (dollmaker.getSkillTimes() < 1 && !targetPlayer.isAlive()) {
+        if (dollmaker.getSkillTimes() < 1 && !target.isAlive()) {
             dollmaker.incrementSkillTimes();
-            targetPlayer.setAlive(true);
-            targetPlayer.setDeathDay(-1);
-            dollmakerFrame.updateInfo("您复活了" + targetPlayer.getName() + "！");
+            target.setAlive(true);
+            target.setDeathDay(-1);
+            dollmakerFrame.updateInfo("您复活了" + target.getName() + "！");
             targetFrame.updateInfo("您被人偶师复活了！");
         }
+    }
+
+    // 对外接口，处理人偶师输入
+    public static void handleDOLLMAKERInput(Game game, Player target) {
+        DOLLMAKER_Skill(game, target);
     }
 
 }

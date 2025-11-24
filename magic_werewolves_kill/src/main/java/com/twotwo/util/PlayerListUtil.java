@@ -140,9 +140,12 @@ public class PlayerListUtil {
         int index = 1;
         for (Player sp : sameLocationPlayers) {
             sb.append(index).append(". ")
-                        .append(sp.getName())
-                        .append("\n");
+                    .append(sp.getName())
+                    .append("\n");
             index++;
+        }
+        if(sameLocationPlayers.isEmpty()) {
+            return "当前地点无其他玩家。";
         }
         return sb.toString();
     }
@@ -152,7 +155,8 @@ public class PlayerListUtil {
     }
 
     // 当天死亡玩家列表
-    public static String getTodayDeadPlayerList(List<Player> players, Game game) {
+    public static String getTodayDeadPlayerList(Game game) {
+        List<Player> players = game.getPlayers();
         StringBuilder sb = new StringBuilder("今日死亡玩家列表：\n");
         int index = 1;
         for (Player p : players) {
@@ -172,7 +176,8 @@ public class PlayerListUtil {
     }
 
     // 过去死亡玩家列表
-    public static String getPastDeadPlayerList(List<Player> players, Game game) {
+    public static String getPastDeadPlayerList(Game game) {
+        List<Player> players = game.getPlayers();
         StringBuilder sb = new StringBuilder("死亡玩家列表：\n");
         int index = 1;
         for (Player p : players) {
@@ -189,6 +194,20 @@ public class PlayerListUtil {
             return "所有玩家均存活。";
         }
         return sb.toString();
+    }
+
+    public static Player getPastDeadPlayer(Game game, int index) {
+        List<Player> players = game.getPlayers();
+        int count = 0;
+        for (Player p : players) {
+            if (!p.isAlive() && p.getDeathDay() != game.getCurrentDay()) {
+                count++;
+                if (count == index) {
+                    return p;
+                }
+            }
+        }
+        return null;
     }
 
 }

@@ -33,7 +33,7 @@ public class PlayerFrame extends JFrame {
                 this.skillName = "自爆";
                 break;
             case WITCH:
-                this.skillName = "发射光波";
+                this.skillName = "光波";
                 break;
             case LADY:
                 this.skillName = "激光";

@@ -61,7 +61,7 @@ public class Player {
     }
 
     public boolean GameAlive(Game game) {
-        return alive || !alive && deathDay != game.getCurrentDay();
+        return alive || !alive && deathDay == game.getCurrentDay();
     }
 
     public void setAlive(boolean alive) {

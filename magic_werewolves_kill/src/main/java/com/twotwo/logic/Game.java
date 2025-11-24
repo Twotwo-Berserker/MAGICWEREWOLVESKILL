@@ -109,21 +109,23 @@ public class Game {
                 break;
             case 5: // 步骤6：所有人行动（关键步骤）
                 // 蓝金和侦探被动技能
-                SkillExecutor.executeSkill(getPlayer(Role.RoleType.SHINEBLUE), this);
-                SkillExecutor.executeSkill(getPlayer(Role.RoleType.DETECTIVE), this);
+                useSkill(getPlayer(Role.RoleType.SHINEBLUE));
+                useSkill(getPlayer(Role.RoleType.DETECTIVE));
 
-                // 令仓鼠和魔女的Skill按钮可见
+                // 令仓鼠、魔女、人偶师的Skill按钮可见
                 setSkillButtonVisible(Role.RoleType.HAMSTER, true);
                 setSkillButtonVisible(Role.RoleType.WITCH, true);
+                setSkillButtonVisible(Role.RoleType.DOLLMAKER, true);
 
                 Delay("行动时间...", 20000);
                 break;
             case 6: // 步骤7：打印死亡情况
                 setSkillButtonVisible(Role.RoleType.HAMSTER, false);
                 setSkillButtonVisible(Role.RoleType.WITCH, false);
+                setSkillButtonVisible(Role.RoleType.DOLLMAKER, false);
                 for (PlayerFrame pf : playerFrames) {
                     pf.updateInfo("===== 第 " + day + " 天 死亡情况 =====");
-                    pf.updateInfo(PlayerListUtil.getTodayDeadPlayerList(players, this));
+                    pf.updateInfo(PlayerListUtil.getTodayDeadPlayerList(this));
                 }
                 currentStep++;
                 processNextStep();
@@ -262,7 +264,7 @@ public class Game {
             try {
                 int targetIndex = Integer.parseInt(input);
                 Player Target = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
-                if (Target != null && !(currentStep == 5 && Target.isGuarded())) {
+                if (Target != null) {
                     SkillExecutor.handleHAMSTERInput(this, Target);
                 }
             } catch (Exception e) {
@@ -287,6 +289,22 @@ public class Game {
                 pf.updateInfo("发射激光失败！");
             } finally {
                 setSkillButtonVisible(Role.RoleType.WITCH, false);
+            }
+            return;
+        }
+
+        // 人偶师复活响应
+        if (currentStep == 5 && pf.getPlayer().getRole() == Role.RoleType.DOLLMAKER) {
+            try {
+                int targetIndex = Integer.parseInt(input);
+                Player Target = PlayerListUtil.getPastDeadPlayer(this, targetIndex);
+                if (Target != null) {
+                    SkillExecutor.handleDOLLMAKERInput(this, Target);
+                }
+            } catch (Exception e) {
+                pf.updateInfo("复活失败！");
+            } finally {
+                setSkillButtonVisible(Role.RoleType.DOLLMAKER, false);
             }
             return;
         }
@@ -563,7 +581,7 @@ public class Game {
         final boolean visibleFlag = ((roleType == Role.RoleType.LADY
                 || roleType == Role.RoleType.DOLLMAKER) && SkillTimes > 0) ? false : visible;
 
-        if (targetFrame != null && (targetFrame.getPlayer().isAlive() || !visibleFlag)) {
+        if (targetFrame != null && (targetFrame.getPlayer().GameAlive(this) || !visibleFlag)) {
             // 在Swing线程中更新UI
             SwingUtilities.invokeLater(() -> {
                 targetFrame.getSouthContainer().setVisible(visibleFlag);
