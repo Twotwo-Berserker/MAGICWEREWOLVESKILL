@@ -152,8 +152,11 @@ public class Game {
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
-                // 最后由大小姐总结归票
-                aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
+                PlayerFrame firstFrame = aliveFrames.get(0); 
+                if (firstFrame.getPlayer().getRole() == Role.RoleType.LADY) {
+                    aliveFrames.add(firstFrame); // 最后由大小姐总结归票
+                    aliveFrames.remove(0); // 如果大小姐第一个发言，移除以防重复
+                }
 
                 // 启动发言流程
                 startPublicSpeaking(aliveFrames, 0);
@@ -514,9 +517,13 @@ public class Game {
             }
             List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
             aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
-            int index = aliveFrames.indexOf(pf);
+            int index = aliveFrames.lastIndexOf(pf); // 获取当前发言玩家的末尾索引，防大小姐重复发言
             SwingUtilities.invokeLater(() -> {
-                Timer delayTimer = new Timer(500, e -> startPublicSpeaking(aliveFrames, index + 1));
+                Timer delayTimer = new Timer(500, e -> {
+                    setSkillButtonVisible(Role.RoleType.LADY, true);
+                    setSkillButtonVisible(Role.RoleType.HAMSTER, true);
+                    startPublicSpeaking(aliveFrames, index + 1);
+                });
                 delayTimer.setRepeats(false);
                 delayTimer.start();
             });

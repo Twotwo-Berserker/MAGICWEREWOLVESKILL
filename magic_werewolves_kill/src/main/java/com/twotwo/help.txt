@@ -14,7 +14,4 @@ SwingUtilities.invokeLater(() -> {
                     timer.start();
                 });
 
-三.bug：
-取消键bug
-1.取消发言后无法恢复技能按钮可见性
-2.最后一个取消键会导致发言轮回
+三.bug：暂无
