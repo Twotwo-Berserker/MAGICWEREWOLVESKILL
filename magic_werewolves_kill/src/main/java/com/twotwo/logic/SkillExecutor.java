@@ -64,7 +64,7 @@ public class SkillExecutor {
         PlayerFrame shineBlueFrame = game.getPlayerFrame(Role.RoleType.SHINEBLUE);
         Player shineBlue = shineBlueFrame.getPlayer();
         // 蓝金被动技能不被妖精影响
-        if (shineBlue.isAlive() && shineBlue.getCamp() == Camp.CampType.GOOD) {
+        if (shineBlue.GameAlive(game) && shineBlue.getCamp() == Camp.CampType.GOOD) {
             List<Player> sameLocationPlayers = PlayerListUtil.getSameLocationPlayerList(game.getPlayers(),
                     shineBlue, 1);
             // 如果存在狼人

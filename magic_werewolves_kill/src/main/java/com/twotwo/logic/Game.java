@@ -12,12 +12,15 @@ import com.twotwo.ui.*;
 import com.twotwo.util.*;
 
 public class Game {
+    private boolean gameOver = false;
+    private int gameResult = -1; // 0:好人胜利, 1:狼人胜利, 2:特殊结局
+
     private List<Player> players = new ArrayList<>();
     private List<PlayerFrame> playerFrames = new ArrayList<>();
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = -1; // 之后改成-1
+    private int currentStep = 9; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
 
     // 其他状态管理对象...
@@ -73,10 +76,10 @@ public class Game {
         playerFrames.forEach(pf -> pf.setVisible(true));
 
         // 从中间开始测试
-        // processNextStep();
+        processNextStep();
 
         // 正式测试，开始厨娘绑定
-        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
@@ -91,6 +94,9 @@ public class Game {
 
     // 按步骤推进流程
     public void processNextStep() {
+        if (gameOver)
+            return;
+
         switch (currentStep) {
             case 0: // 步骤1：护行动
                 startRoleAction(Role.RoleType.GUARD, "请输入要守护的玩家编号：");
@@ -140,12 +146,11 @@ public class Game {
                 Delay("进入聊天室...", 2000);
                 break;
             case 10: // 步骤11：大小姐选择顺序
+                setSkillButtonVisible(Role.RoleType.HAMSTER, true);
+                setSkillButtonVisible(Role.RoleType.LADY, true);
                 Delay("大小姐选择发言顺序...", 2000);
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
-                setSkillButtonVisible(Role.RoleType.HAMSTER, true);
-                setSkillButtonVisible(Role.RoleType.LADY, true);
-
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
                 // 最后由大小姐总结归票
                 aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
@@ -228,8 +233,14 @@ public class Game {
                         pf.updateInfo(PlayerListUtil.getAlivePlayerList(players));
                         break;
                     case FAIRY:
-                        pf.showCompleteInputArea();
-                        pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
+                        if (pf.getPlayer().getSkillTimes() < 2) {
+                            pf.showCompleteInputArea();
+                            pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
+                        } else {
+                            pf.updateInfo("技能已用完，跳过行动...");
+                            currentStep++;
+                            processNextStep();
+                        }
                         break;
                     case DETECTIVE:
                         pf.showInputArea();
@@ -239,8 +250,14 @@ public class Game {
                         pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
                         break;
                     case LITTLEYUAN:
-                        pf.showCompleteInputArea();
-                        pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
+                        if (pf.getPlayer().getSkillTimes() < 2) {
+                            pf.showCompleteInputArea();
+                            pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
+                        } else {
+                            pf.updateInfo("技能已用完，跳过行动...");
+                            currentStep++;
+                            processNextStep();
+                        }
                         break;
                     default:
                         break;
@@ -254,15 +271,10 @@ public class Game {
 
     // 当玩家输入完成后调用（由PlayerFrame的确认按钮触发）
     public void onPlayerInputCompleted(PlayerFrame pf, String input) {
-        // 公开发言阶段，防止取消输入框 之后优化代码
-        if (currentStep == 11) {
-            ChatUtil.publicChat(playerFrames, currentWaitingFrame, input);
-            return;
-        }
-
         // 仓鼠自爆响应
         if ((currentStep == 5 || currentStep == 11 || currentStep == 12)
-                && pf.getPlayer().getRole() == Role.RoleType.HAMSTER) {
+                && pf.getPlayer().getRole() == Role.RoleType.HAMSTER
+                && pf.getSkillPanel().isVisible()) {
             try {
                 int targetIndex = Integer.parseInt(input);
                 Player Target = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
@@ -274,7 +286,6 @@ public class Game {
             } finally {
                 setSkillButtonVisible(Role.RoleType.HAMSTER, false);
             }
-
             return;
         }
 
@@ -308,6 +319,12 @@ public class Game {
             } finally {
                 setSkillButtonVisible(Role.RoleType.DOLLMAKER, false);
             }
+            return;
+        }
+
+        // 公开发言阶段，防止取消输入框 之后优化代码
+        if (currentStep == 11) {
+            ChatUtil.publicChat(playerFrames, currentWaitingFrame, input);
             return;
         }
 
@@ -408,8 +425,7 @@ public class Game {
                 try {
                     int targetIndex = Integer.parseInt(input);
                     Player deceiveTarget = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
-                    if (deceiveTarget != null && !deceiveTarget.isGuarded()
-                            && pf.getPlayer().getSkillTimes() <= 2) {
+                    if (deceiveTarget != null && !deceiveTarget.isGuarded()) {
                         pf.getPlayer().incrementSkillTimes();
                         pf.updateInfo("已蒙蔽玩家：" + deceiveTarget.getName());
                         deceiveTarget.setIsDeceived(true);
@@ -459,7 +475,7 @@ public class Game {
                 try {
                     int targetIndex = Integer.parseInt(input);
                     Player disturbTarget = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
-                    if (disturbTarget != null && pf.getPlayer().getSkillTimes() <= 2) {
+                    if (disturbTarget != null) {
                         pf.getPlayer().incrementSkillTimes();
                         pf.updateInfo("已干扰玩家：" + disturbTarget.getName());
                         disturbTarget.setIsDisturbed(true);
@@ -511,11 +527,11 @@ public class Game {
     /**
      * 启动公开发言流程
      * 
-     * @param frames 按发言顺序排列的玩家窗口列表
-     * @param index  当前发言玩家索引
+     * @param speakers 按发言顺序排列的玩家窗口列表
+     * @param index    当前发言玩家索引
      */
-    private void startPublicSpeaking(List<PlayerFrame> frames, int index) {
-        if (index >= frames.size()) {
+    private void startPublicSpeaking(List<PlayerFrame> speakers, int index) {
+        if (index >= speakers.size()) {
             // 所有玩家发言结束，进入下一步
             currentStep++;
             processNextStep();
@@ -525,7 +541,7 @@ public class Game {
         // 隐藏所有玩家的输入区域
         playerFrames.forEach(pf -> pf.hideInputArea());
 
-        currentWaitingFrame = frames.get(index);
+        currentWaitingFrame = speakers.get(index);
         String speakerName = currentWaitingFrame.getPlayer().getName();
 
         // 通知所有玩家当前发言状态
@@ -533,6 +549,8 @@ public class Game {
 
         // 配置当前发言玩家
         currentWaitingFrame.updateInfo("轮到你发言（10秒倒计时）：");
+        boolean SkillButtonVisible = currentWaitingFrame.getSkillPanel().isVisible();
+        setSkillButtonVisible(currentWaitingFrame.getPlayer().getRole(), false); // 隐藏技能按钮
         currentWaitingFrame.showCompleteInputArea();
         // 启动10秒倒计时
         currentWaitingFrame.getCountdownUtil().startCountdown(
@@ -545,9 +563,11 @@ public class Game {
                         ChatUtil.publicChat(playerFrames, currentWaitingFrame, speech);
                     }
                     currentWaitingFrame.hideInputArea(); // 倒计时结束时才隐藏输入区域
+                    setSkillButtonVisible(currentWaitingFrame.getPlayer().getRole(), SkillButtonVisible); // 恢复技能按钮可见性
+
                     // 延迟0.5秒进入下一位发言，避免界面闪烁
                     SwingUtilities.invokeLater(() -> {
-                        Timer delayTimer = new Timer(500, e -> startPublicSpeaking(frames, index + 1));
+                        Timer delayTimer = new Timer(500, e -> startPublicSpeaking(speakers, index + 1));
                         delayTimer.setRepeats(false);
                         delayTimer.start();
                     });
@@ -595,6 +615,30 @@ public class Game {
 
     }
 
+    /*
+     * 游戏结束
+     */
+    public void setGameOver(int result) {
+        this.gameOver = true;
+        this.gameResult = result;
+        // 显示结局信息
+        String message = switch (result) {
+            case 0 -> "游戏结束，好人胜利！";
+            case 1 -> "游戏结束，狼人胜利！";
+            case 2 -> "特殊结局：无人生还！";
+            default -> "游戏异常结束";
+        };
+        notifyAllPlayers(message);
+        for (PlayerFrame frame : playerFrames) {
+            frame.hideInputArea(); // 禁用所有输入
+            frame.getSkillPanel().setVisible(false); // 隐藏技能面板
+            if (frame.getCountdownUtil().isCountingDown()) {
+                frame.getCountdownUtil().finishCountdown(); // 停止倒计时
+            }
+        }
+        processNextStep();
+    }
+
     /**
      * utils
      * 
@@ -627,7 +671,7 @@ public class Game {
 
     // Skill按钮触发
     public void useSkill(Player player) {
-        if (player == null || !player.GameAlive(this)) {
+        if (player == null) {
             return;
         }
         // 调用 SkillExecutor 执行对应角色的技能
@@ -661,19 +705,6 @@ public class Game {
             timer.setRepeats(false); // 只执行一次
             timer.start();
         });
-    }
-
-    /**
-     * 游戏结束
-     * 
-     * @return
-     */
-    public void setGameOver(int result) {
-        if (result == 0) {
-            notifyAllPlayers("游戏结束，好人阵营获胜！");
-        } else if (result == 1) {
-            notifyAllPlayers("游戏结束，狼人阵营获胜！");
-        }
     }
 
     // getters

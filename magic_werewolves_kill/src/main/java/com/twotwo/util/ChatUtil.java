@@ -30,7 +30,7 @@ public class ChatUtil {
     }
 
     /**
-     * 实现公开发言功能（所有存活玩家都能看到）
+     * 实现公开发言功能
      * @param allFrames 所有玩家界面列表
      * @param senderFrame 发言玩家界面
      * @param message 发言内容
@@ -43,10 +43,8 @@ public class ChatUtil {
             
             // 向所有存活玩家发送公聊信息
             for (PlayerFrame frame : allFrames) {
-                if (frame.getPlayer().isAlive()) { // 只给存活玩家显示
-                    frame.updateInfo(publicMessage);
+                    frame.updateInfo(publicMessage); // 向每个玩家界面显示公聊信息
                 }
-            }
         });
     }
 }

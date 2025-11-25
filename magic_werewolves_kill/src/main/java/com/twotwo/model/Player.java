@@ -160,11 +160,9 @@ public class Player {
         if (this.alive) {
             this.alive = false;
             this.deathDay = game.getCurrentDay();
-            if (WinChecker.checkWerewolfWin(game) == 0) {
-                game.setGameOver(0);
-            }
-            if (WinChecker.checkWerewolfWin(game) == 1) {
-                game.setGameOver(1);
+            int gameResult = WinChecker.checkWerewolfWin(game);
+            if (gameResult != -1) {
+                game.setGameOver(gameResult);
             }
         }
     }
