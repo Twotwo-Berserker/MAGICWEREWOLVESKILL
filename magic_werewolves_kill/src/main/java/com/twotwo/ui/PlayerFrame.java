@@ -18,9 +18,11 @@ public class PlayerFrame extends JFrame {
     private JPanel skillPanel; // 技能按钮面板
     private JButton skillBtn; // 技能按钮
     private String skillName = "技能"; // 技能名称
-    private JTextField inputField; // 输入数字的文本框
     private JPanel inputPanel; // 输入区域面板
+    private JTextField inputField; // 输入数字的文本框
     private JButton confirmBtn; // 确认按钮
+    private JPanel cancelPanel; // 取消按钮面板
+    private JButton cancelBtn; // 取消按钮
     private boolean isInputReady = false; // 标记输入是否完成
     private CountdownUtil countdownUtil = new CountdownUtil(); // 倒计时工具,每个界面一个实例
     // 其他UI组件...
@@ -37,6 +39,9 @@ public class PlayerFrame extends JFrame {
                 break;
             case LADY:
                 this.skillName = "激光";
+                break;
+            case DOLLMAKER:
+                this.skillName = "复活";
                 break;
             default:
                 break;
@@ -73,16 +78,30 @@ public class PlayerFrame extends JFrame {
         skillPanel.add(skillBtn);
         southContainer.add(skillPanel, BorderLayout.NORTH); // 添加到组合面板的上方
 
-        // 输入区域（底部）：文本框 + 确认按钮
+        // 输入区域面板
         inputPanel = new JPanel(new FlowLayout());
+
+        // 文本框
         inputField = new JTextField(10);
+
+        // 确认按钮
         confirmBtn = new JButton("确认");
         EnterKeyUtil.pressEnterKey(this, confirmBtn);
         // 确认按钮点击事件：提交输入
         confirmBtn.addActionListener(e -> onConfirmInput(e));
         inputPanel.add(new JLabel("请输入："));
+
+        // 取消面板与按钮
+        cancelPanel = new JPanel(new FlowLayout());
+        cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> onCancelInput(e));
+        cancelPanel.add(cancelBtn);
+
+        // 添加组件到输入面板
         inputPanel.add(inputField);
         inputPanel.add(confirmBtn);
+        inputPanel.add(cancelPanel);
+
         // 为 inputPanel 添加组件监听器
         inputPanel.addComponentListener(new ComponentAdapter() {
             @Override
@@ -105,9 +124,9 @@ public class PlayerFrame extends JFrame {
 
         // 初始隐藏
         southContainer.setVisible(false);
-        skillPanel.setVisible(false); // 可skillPanel是临时变量
-        skillBtn.setVisible(false);
+        skillPanel.setVisible(false);
         inputPanel.setVisible(false);
+        cancelPanel.setVisible(false);
 
         // 设置窗口图标
         URL iconUrl = DataUtil.iconUrl;
@@ -134,14 +153,36 @@ public class PlayerFrame extends JFrame {
         }
     }
 
-    // 显示输入区域（需要玩家操作时调用）
+    // 取消输入的处理逻辑
+    private void onCancelInput(ActionEvent e) {
+        // 通知游戏逻辑：当前玩家取消输入
+        game.onPlayerInputCancelled(this);
+        // 清空输入框，隐藏输入区域
+        inputField.setText("");
+        inputPanel.setVisible(false); // 隐藏输入区域
+        isInputReady = true;
+    }
+
+    // 显示输入区域（不包括取消按钮）
     public void showInputArea() {
         SwingUtilities.invokeLater(() -> {
             southContainer.setVisible(true);
             inputPanel.setVisible(true);
+            cancelPanel.setVisible(false);
             inputField.setText(""); // 清空输入框
             isInputReady = false;
             inputField.requestFocusInWindow(); // 请求焦点
+        });
+    }
+
+    public void showCompleteInputArea() {
+        SwingUtilities.invokeLater(() -> {
+            southContainer.setVisible(true);
+            inputPanel.setVisible(true);
+            cancelPanel.setVisible(true);
+            inputField.setText(""); 
+            isInputReady = false;
+            inputField.requestFocusInWindow(); 
         });
     }
 
@@ -201,5 +242,13 @@ public class PlayerFrame extends JFrame {
 
     public JButton getSkillBtn() {
         return skillBtn;
+    }
+
+    public JPanel getCancelPanel() {
+        return cancelPanel;
+    }
+
+    public JButton getCancelBtn() {
+        return cancelBtn;
     }
 }

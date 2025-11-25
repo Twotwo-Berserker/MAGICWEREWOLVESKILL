@@ -26,7 +26,7 @@ public class SkillExecutor {
                 PlayerFrame hamsterFrame = game.getPlayerFrame(Role.RoleType.HAMSTER);
                 hamsterFrame.updateInfo("请输入自爆的对象：");
                 hamsterFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
-                hamsterFrame.showInputArea();
+                hamsterFrame.showCompleteInputArea();
                 break;
             // 魔女
             case WITCH:
@@ -39,7 +39,7 @@ public class SkillExecutor {
                     witchFrame.updateInfo("无法使用技能！");
                     return;
                 }
-                witchFrame.showInputArea();
+                witchFrame.showCompleteInputArea();
                 break;
             // 人偶师
             case DOLLMAKER:
@@ -51,7 +51,7 @@ public class SkillExecutor {
                     dollmakerFrame.updateInfo("没有可复活的对象!");
                     return;
                 }
-                dollmakerFrame.showInputArea();
+                dollmakerFrame.showCompleteInputArea();
                 break;
             default:
                 break;

@@ -148,10 +148,8 @@ public class Game {
 
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
                 // 最后由大小姐总结归票
-                aliveFrames.add(playerFrames.stream()
-                        .filter(pf -> pf.getPlayer().getRole() == Role.RoleType.LADY)
-                        .findFirst()
-                        .orElse(null));
+                aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
+
                 // 启动发言流程
                 startPublicSpeaking(aliveFrames, 0);
                 break;
@@ -219,25 +217,29 @@ public class Game {
 
                 // 操作玩家：显示输入提示和输入框
                 pf.updateInfo(inputHint);
-                pf.showInputArea(); // 显示输入区域
                 // 显示玩家列表（供选择）
                 switch (roleType) {
                     case COOKGIRL:
+                        pf.showInputArea();
                         pf.updateInfo(PlayerListUtil.getOtherPlayerList(players, pf.getPlayer()));
                         break;
                     case GUARD:
+                        pf.showCompleteInputArea();
                         pf.updateInfo(PlayerListUtil.getAlivePlayerList(players));
                         break;
                     case FAIRY:
+                        pf.showCompleteInputArea();
                         pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
+                        break;
+                    case DETECTIVE:
+                        pf.showInputArea();
                         break;
                     case SNOWWHITE:
-                        pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
-                        break;
-                    case HAMSTER:
+                        pf.showInputArea();
                         pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
                         break;
                     case LITTLEYUAN:
+                        pf.showCompleteInputArea();
                         pf.updateInfo(PlayerListUtil.getOtherAlivePlayerList(players, pf.getPlayer()));
                         break;
                     default:
@@ -330,7 +332,14 @@ public class Game {
                 pf.getPlayer().setCurrentLocation(locationType);
             } catch (Exception e) {
                 pf.updateInfo("输入无效，已自动分配随机地点");
-                // 可添加随机分配地点的逻辑
+                // 随机分配地点
+                List<Location.LocationType> locTypes = Arrays.asList(
+                        Location.LocationType.DRAGON_CAVE,
+                        Location.LocationType.KITCHEN,
+                        Location.LocationType.STORE,
+                        Location.LocationType.LIBRARY);
+                Location.LocationType randomLocation = locTypes.get(new java.util.Random().nextInt(locTypes.size()));
+                pf.getPlayer().setCurrentLocation(randomLocation);
             }
 
             // 检查是否所有存活玩家都已完成选择
@@ -473,6 +482,32 @@ public class Game {
         processNextStep();
     }
 
+    // 取消输入的处理逻辑
+    public void onPlayerInputCancelled(PlayerFrame pf) {
+        // 护和妖精取消响应：跳过
+        if (currentStep == 0 || currentStep == 1 || currentStep == 12) {
+            currentStep++;
+            updateCurrentProcess();
+            processNextStep();
+        }
+
+        // 公开发言阶段取消响应：跳过倒计时，轮到下一位发言
+        if (currentStep == 11) {
+            if (pf.getCountdownUtil().isCountingDown()) {
+                pf.getCountdownUtil().finishCountdown();
+            }
+            List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
+            aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
+            int index = aliveFrames.indexOf(pf);
+            SwingUtilities.invokeLater(() -> {
+                Timer delayTimer = new Timer(500, e -> startPublicSpeaking(aliveFrames, index + 1));
+                delayTimer.setRepeats(false);
+                delayTimer.start();
+            });
+            return;
+        }
+    }
+
     /**
      * 启动公开发言流程
      * 
@@ -498,8 +533,7 @@ public class Game {
 
         // 配置当前发言玩家
         currentWaitingFrame.updateInfo("轮到你发言（10秒倒计时）：");
-        currentWaitingFrame.showInputArea();
-
+        currentWaitingFrame.showCompleteInputArea();
         // 启动10秒倒计时
         currentWaitingFrame.getCountdownUtil().startCountdown(
                 currentWaitingFrame.getScrollPane(),
@@ -550,7 +584,7 @@ public class Game {
 
         // 重置侦探是否在墙内状态
         Player detective = getPlayer(Role.RoleType.DETECTIVE);
-        if (detective != null) 
+        if (detective != null)
             detective.setInWall(false);
 
         // 重置当前地点
