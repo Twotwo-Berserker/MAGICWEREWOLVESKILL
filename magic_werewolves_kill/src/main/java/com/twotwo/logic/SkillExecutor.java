@@ -31,7 +31,7 @@ public class SkillExecutor {
             // 魔女
             case WITCH:
                 PlayerFrame witchFrame = game.getPlayerFrame(Role.RoleType.WITCH);
-                witchFrame.updateInfo("请输入发射激光的对象：");
+                witchFrame.updateInfo("请输入魔女光波的对象：");
                 String sameLocationList = PlayerListUtil.getSameLocationPlayerListToString(
                         PlayerListUtil.getSameLocationPlayerList(game.getPlayers(), player, 0));
                 witchFrame.updateInfo(sameLocationList);
@@ -52,6 +52,13 @@ public class SkillExecutor {
                     return;
                 }
                 dollmakerFrame.showCompleteInputArea();
+                break;
+            // 大小姐
+            case LADY:
+                PlayerFrame ladyFrame = game.getPlayerFrame(Role.RoleType.LADY);
+                ladyFrame.updateInfo("请输入发射激光的对象：");
+                ladyFrame.updateInfo(PlayerListUtil.getOtherAlivePlayerList(game.getPlayers(), player));
+                ladyFrame.showCompleteInputArea();
                 break;
             default:
                 break;
@@ -106,12 +113,12 @@ public class SkillExecutor {
         if (hamster.getSkillTimes() == 0 &&
                 hamster.GameAlive(game) && target.GameAlive(game)) {
             hamster.incrementSkillTimes();
-            hamster.Die(game);
             hamsterFrame.updateInfo("您自爆了，带走了" + target.getName() + "！");
             if (!(game.getCurrentStep() == 5 && target.isGuarded())) {
                 target.Die(game);
                 targetFrame.updateInfo("您被仓鼠自爆带走，死亡！");
             }
+            hamster.Die(game);
         }
     }
 
@@ -128,12 +135,12 @@ public class SkillExecutor {
         witch.incrementSkillTimes();
         // 魔女光波无视护卫
         if (target.getCamp() == witch.getCamp()) {
-            witch.Die(game);
             witchFrame.updateInfo("您攻击了队友，自身死亡！");
+            witch.Die(game);
         } else {
-            target.Die(game);
             witchFrame.updateInfo("您攻击了敌人，敌人死亡！");
             targetFrame.updateInfo("您被魔女光波击中，死亡！");
+            target.Die(game);
         }
     }
 
@@ -160,5 +167,24 @@ public class SkillExecutor {
     public static void handleDOLLMAKERInput(Game game, Player target) {
         DOLLMAKER_Skill(game, target);
     }
+
+    // 大小姐激光
+    private static void LADY_Skill(Game game, Player target) {
+        PlayerFrame ladyFrame = game.getPlayerFrame(Role.RoleType.LADY);
+        Player lady = ladyFrame.getPlayer();
+        PlayerFrame targetFrame = game.getPlayerFrame(target.getRole());
+        if (lady.getSkillTimes() == 0 &&
+                lady.isAlive() && target.isAlive()) {
+            lady.incrementSkillTimes();
+            ladyFrame.updateInfo("您发射了激光，" + target.getName() + "死亡！");
+            targetFrame.updateInfo("您被大小姐的激光击中，死亡！");
+            target.Die(game);
+        }
+    }
+
+    // 对外接口，处理大小姐输入
+    public static void handleLADYInput(Game game, Player target) {
+        LADY_Skill(game, target);
+    }   
 
 }

@@ -20,7 +20,7 @@ public class Game {
     private int day = 1;
 
     // 当前流程步骤（0-护行动，1-妖精行动，2-侦探行动...）
-    private int currentStep = 9; // 之后改成-1
+    private int currentStep = -1; // 之后改成-1
     private PlayerFrame currentWaitingFrame; // 当前等待操作的玩家窗口
 
     // 其他状态管理对象...
@@ -76,10 +76,10 @@ public class Game {
         playerFrames.forEach(pf -> pf.setVisible(true));
 
         // 从中间开始测试
-        processNextStep();
+        // processNextStep();
 
         // 正式测试，开始厨娘绑定
-        // startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
+        startRoleAction(Role.RoleType.COOKGIRL, "请输入绑定对象（1-10）");
     }
 
     // 执行一天的流程
@@ -152,7 +152,7 @@ public class Game {
                 break;
             case 11: // 步骤12：按顺序公开发言（语音先不做）
                 List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
-                PlayerFrame firstFrame = aliveFrames.get(0); 
+                PlayerFrame firstFrame = aliveFrames.get(0);
                 if (firstFrame.getPlayer().getRole() == Role.RoleType.LADY) {
                     aliveFrames.add(firstFrame); // 最后由大小姐总结归票
                     aliveFrames.remove(0); // 如果大小姐第一个发言，移除以防重复
@@ -292,7 +292,7 @@ public class Game {
             return;
         }
 
-        // 魔女发射激光响应
+        // 魔女光波响应
         if (currentStep == 5 && pf.getPlayer().getRole() == Role.RoleType.WITCH) {
             try {
                 int targetIndex = Integer.parseInt(input);
@@ -302,7 +302,7 @@ public class Game {
                     SkillExecutor.handleWITCHInput(this, Target);
                 }
             } catch (Exception e) {
-                pf.updateInfo("发射激光失败！");
+                pf.updateInfo("魔女光波失败！");
             } finally {
                 setSkillButtonVisible(Role.RoleType.WITCH, false);
             }
@@ -321,6 +321,23 @@ public class Game {
                 pf.updateInfo("复活失败！");
             } finally {
                 setSkillButtonVisible(Role.RoleType.DOLLMAKER, false);
+            }
+            return;
+        }
+
+        // 大小姐激光响应
+        if ((currentStep == 11 || currentStep == 12) && pf.getPlayer().getRole() == Role.RoleType.LADY
+                && pf.getSkillPanel().isVisible()) {
+            try {
+                int targetIndex = Integer.parseInt(input);
+                Player Target = PlayerListUtil.getOtherAlivePlayer(players, pf.getPlayer(), targetIndex);
+                if (Target != null) {
+                    SkillExecutor.handleLADYInput(this, Target);
+                }
+            } catch (Exception e) {
+                pf.updateInfo("发射激光失败！");
+            } finally {
+                setSkillButtonVisible(Role.RoleType.LADY, false);
             }
             return;
         }
@@ -549,6 +566,13 @@ public class Game {
         playerFrames.forEach(pf -> pf.hideInputArea());
 
         currentWaitingFrame = speakers.get(index);
+        
+        // 防止大小姐死亡后仍能发言
+        if (!currentWaitingFrame.getPlayer().isAlive()) {
+            startPublicSpeaking(speakers, index + 1);
+            return;
+        }
+
         String speakerName = currentWaitingFrame.getPlayer().getName();
 
         // 通知所有玩家当前发言状态
