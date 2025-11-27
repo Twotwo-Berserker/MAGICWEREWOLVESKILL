@@ -114,7 +114,7 @@ public class WerewolfAction {
                 // 选择了墙
                 // 查询侦探是否在墙内
                 Player detective = game.getPlayer(Role.RoleType.DETECTIVE);
-                if (detective != null && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation() 
+                if (detective != null && detective.getCurrentLocation() == wolfFrame.getPlayer().getCurrentLocation()
                         && detective.isInWall() && !detective.isGuarded()) {
                     detective.Die(game);
                 }
@@ -132,6 +132,9 @@ public class WerewolfAction {
     // 推进到下一步流程
     private void advanceToNextStep() {
         if (Finished >= AliveWerewolfNumber) {
+            // 终止所有倒计时
+            CountdownUtil.StopAllCountdown(game.getPlayerFrames());
+
             game.setCurrentStep(game.getCurrentStep() + 1);
             game.updateCurrentProcess();
             game.processNextStep();
@@ -144,10 +147,15 @@ public class WerewolfAction {
      */
     public void werewolfPrivateChat() {
         List<PlayerFrame> playerFrames = game.getPlayerFrames();
-        List<Player> Alivewerewolves = getAliveWolves();
+        List<Player> aliveWerewolves = getAliveWolves();
+        AliveWerewolfNumber = aliveWerewolves.size(); // 更新狼人数量
+
+        // 先终止所有可能存在的倒计时
+        CountdownUtil.StopAllCountdown(game.getPlayerFrames());
+
         for (PlayerFrame playerFrame : playerFrames) {
-            if (Alivewerewolves.contains(playerFrame.getPlayer())) {
-                Player anotherWolf = Alivewerewolves.stream()
+            if (aliveWerewolves.contains(playerFrame.getPlayer())) {
+                Player anotherWolf = aliveWerewolves.stream()
                         .filter(wolf -> wolf.isAlive() && wolf != playerFrame.getPlayer())
                         .findFirst()
                         .orElse(null);
@@ -178,11 +186,16 @@ public class WerewolfAction {
                         60,
                         () -> {
                             if (game.getCurrentStep() == 8) {
+                                // 终止所有倒计时
+                                CountdownUtil.StopAllCountdown(game.getPlayerFrames());
+
                                 game.setCurrentStep(9);
                                 game.updateCurrentProcess();
                                 game.processNextStep();
                                 playerFrame.hideInputArea();
-                                game.getPlayerFrame(anotherWolf.getRole()).hideInputArea();
+                                if (anotherWolf != null) {
+                                    game.getPlayerFrame(anotherWolf.getRole()).hideInputArea();
+                                }
                             }
 
                         });
@@ -209,13 +222,12 @@ public class WerewolfAction {
                 ChatUtil.privateChat(senderFrame, receiverFrame, input);
                 sented = true;
             }
-            if (sented) {
-                if (senderFrame.getCountdownUtil().isCountingDown()) {
-                    senderFrame.getCountdownUtil().finishCountdown();
-                }
+            if (sented) { 
+                senderFrame.getCountdownUtil().finishCountdown();
                 Finished++;
                 advanceToNextStep();
-                break;
+                break; // sented为true，必须终止循环
+                // sented = false; 若狼人不止两个才使用，并去除break
             }
         }
     }
@@ -230,4 +242,8 @@ public class WerewolfAction {
             }
         }
     }
+
+    public void setFinished(int num) {
+        Finished = num;
+    } 
 }

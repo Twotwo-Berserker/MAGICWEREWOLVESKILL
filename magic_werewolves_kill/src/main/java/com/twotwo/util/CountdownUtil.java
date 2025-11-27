@@ -1,9 +1,13 @@
 package com.twotwo.util;
 
 import javax.swing.*;
+
+import com.twotwo.ui.PlayerFrame;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 /**
  * 倒计时工具类，用于在界面文本区域下方显示倒计时
@@ -25,9 +29,7 @@ public class CountdownUtil {
      */
     public void startCountdown(JScrollPane scrollPane, int seconds, Runnable callback) {
         // 先停止当前可能存在的倒计时
-        if (isCountingDown()) {
-            finishCountdown();
-        }
+        finishCountdown();
 
         // 校验秒数范围
         if (seconds < 10 || seconds > 300) {
@@ -97,12 +99,21 @@ public class CountdownUtil {
      * 倒计时结束处理
      */
     public void finishCountdown() {
-        timer.stop();
-        // 延迟移除标签，让用户看到结束提示
-        SwingUtilities.invokeLater(() -> {
-            removeLabel();
-            resetVariables();
-        });
+        if (isCountingDown()) {
+            timer.stop();
+            timer = null;
+            // 延迟移除标签，让用户看到结束提示
+            SwingUtilities.invokeLater(() -> {
+                removeLabel();
+                resetVariables();
+            });
+        }
+    }
+
+    public static void StopAllCountdown(List<PlayerFrame> frames) {
+        for (PlayerFrame frame : frames) {
+            frame.getCountdownUtil().finishCountdown();
+        }
     }
 
     /**
@@ -110,10 +121,10 @@ public class CountdownUtil {
      */
     private void removeLabel() {
         if (container != null && countdownLabel != null) {
-                container.remove(countdownLabel);
-                container.revalidate();
-                container.repaint();
-            }
+            container.remove(countdownLabel);
+            container.revalidate();
+            container.repaint();
+        }
     }
 
     /**

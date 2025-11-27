@@ -180,18 +180,21 @@ public class PlayerFrame extends JFrame {
             southContainer.setVisible(true);
             inputPanel.setVisible(true);
             cancelPanel.setVisible(true);
-            inputField.setText(""); 
+            inputField.setText("");
             isInputReady = false;
-            inputField.requestFocusInWindow(); 
+            inputField.requestFocusInWindow();
         });
     }
 
     // 关闭输入区域
     public void hideInputArea() {
-        SwingUtilities.invokeLater(() -> {
-            inputPanel.setVisible(false);
-            isInputReady = true;
-        });
+        if (inputPanel.isVisible()) {
+            SwingUtilities.invokeLater(() -> {
+                inputField.setText("");
+                inputPanel.setVisible(false);
+                isInputReady = true;
+            });
+        }
     }
 
     // 更新窗口信息

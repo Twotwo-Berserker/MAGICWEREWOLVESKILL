@@ -14,7 +14,4 @@ SwingUtilities.invokeLater(() -> {
                     timer.start();
                 });
 
-三.bug：
-复活狼人后
-1.复活当天与队友聊天出现异常
-2.复活第二天开始倒计时显示重叠
+三.bug：暂无

@@ -529,9 +529,7 @@ public class Game {
 
         // 公开发言阶段取消响应：跳过倒计时，轮到下一位发言
         if (currentStep == 11) {
-            if (pf.getCountdownUtil().isCountingDown()) {
-                pf.getCountdownUtil().finishCountdown();
-            }
+            pf.getCountdownUtil().finishCountdown();
             List<PlayerFrame> aliveFrames = getAlivePlayerFrames();
             aliveFrames.add(getPlayerFrame(Role.RoleType.LADY));
             int index = aliveFrames.lastIndexOf(pf); // 获取当前发言玩家的末尾索引，防大小姐重复发言
@@ -566,7 +564,7 @@ public class Game {
         playerFrames.forEach(pf -> pf.hideInputArea());
 
         currentWaitingFrame = speakers.get(index);
-        
+
         // 防止大小姐死亡后仍能发言
         if (!currentWaitingFrame.getPlayer().isAlive()) {
             startPublicSpeaking(speakers, index + 1);
@@ -644,6 +642,7 @@ public class Game {
         currentStep = -1;
         currentWaitingFrame = null;
 
+        werewolfAction.setFinished(0);
     }
 
     /*
@@ -663,9 +662,7 @@ public class Game {
         for (PlayerFrame frame : playerFrames) {
             frame.hideInputArea(); // 禁用所有输入
             frame.getSkillPanel().setVisible(false); // 隐藏技能面板
-            if (frame.getCountdownUtil().isCountingDown()) {
-                frame.getCountdownUtil().finishCountdown(); // 停止倒计时
-            }
+            frame.getCountdownUtil().finishCountdown(); // 停止倒计时
         }
         processNextStep();
     }
